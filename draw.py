@@ -14,6 +14,7 @@ with open("config.yaml", "r") as f:
     INTERVAL_TIME = config["raw_readings_interval_time"]
 
 already_get_adjusts = 0
+
 def update_sense_adjusts():
     global already_get_adjusts, sense_adjusts
     sense_adjusts = get_sensor_sense_adjust()
