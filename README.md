@@ -4,6 +4,14 @@ This is a visualize configurator for mai_pico, writing in Python tkinter framewo
 
 ## Screenshots
 
+## To-do
+
+- Rewrite the logic of connect the device when the device cannot found normally.
+
+- May need to optimize the code at fetching-displaying sensor raw readings & sensor touching.
+
+- Add more functions.
+
 ## Introduction
 
 This project provides a GUI for the mai_pico command line to help you adjust the settings with only a few clicks.
@@ -18,9 +26,11 @@ By clicking the "Sensitivity adjust" button, it will show the available option a
 
 Press the corresponding button to choose the area (A,B,...) and number (1,2,...), and press the + or - to increase or decrease the sensitivity.
 
-For global sensitivity adjust, press F1 a.k.a. test button while the area selecting prompt appears.
+To adjust global sensitivity, press the F1 a.k.a. Test button when the area selecting prompt appears.
 
 Finally, press the No.8 button to exit sensitivity adjust and take effect.
+
+By the way, you can press the F2 a.k.a. Service button to exit the sensitivity adjust whenever you don't want to anymore.
 
 ### LED brightness
 

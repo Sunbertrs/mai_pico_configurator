@@ -1,0 +1,15 @@
+# This is a configuration file of mai_pico configurator.
+# Do not wrap any lines in this file.
+
+# Command line port and touch port config.
+# Windows: starts with COM, Linux or etc: starts with /dev...
+cli_port: 'COM36'
+touch_port: 'COM2'
+
+# Show the sensitivity adjustment after raw readings.
+# E.g. 930(+1), 970(-3)
+always_show_sense_adjust: True
+
+# The interval time to refresh the raw readings.
+# Cannot be left blank or set to 0.
+raw_readings_interval_time: 1.5
