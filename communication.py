@@ -5,6 +5,14 @@ import re
 
 from preset_var import sensor_area, no_device_debug
 
+if not no_device_debug:
+    operating = serial.Serial
+else:
+    import device_simulate
+    operating = device_simulate.Operating
+    CLI_PORT = device_simulate.CliDevice()
+    TOUCH_PORT = device_simulate.TouchDevice()
+
 def check_connect():
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
@@ -27,32 +35,29 @@ def check_connect():
         return stat
 
 def create_connection():
-    global CLI_PORT, TOUCH_PORT
+    global CLI_PORT, TOUCH_PORT, operating
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
     if not no_device_debug:
-        CLI_PORT = serial.Serial(config['cli_port'], timeout=0.5)
-        TOUCH_PORT = serial.Serial(config['touch_port'], timeout=0.15)
-    else:
-        import device_simulate
-        CLI_PORT = device_simulate.CliDevice()
-        TOUCH_PORT = device_simulate.TouchDevice()
+        CLI_PORT = config['cli_port']
+        TOUCH_PORT = config['touch_port']
 
 def get_hardware_basic_info():
-    with CLI_PORT as port:
+    with operating(CLI_PORT, timeout=0.2) as port:
         port.write(b'?\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        basic_info = [i for i in response if "SN" in i ][0]
-
+        response = [i.decode().strip() for i in port.readlines()[:10]]
+        basic_info = [i for i in response if "SN" in i][0]
+    basic_info = basic_info + f"\nCli: {CLI_PORT}; Touch: {TOUCH_PORT}"
     try:
         basic_info = basic_info + "\n" + [i for i in response if "Built" in i][0]
     except IndexError:
         pass
+    basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
 
     return basic_info
 
 def get_sensor_raw_readings():
-    with CLI_PORT as port:
+    with operating(CLI_PORT, timeout=0.2) as port:
         port.write(b'raw\n')
         response = [i.decode().strip() for i in port.readlines()]
         raw_info = []
@@ -64,7 +69,7 @@ def get_sensor_raw_readings():
     return raw_info
 
 def get_sensor_sense_adjust(index=None):
-    with CLI_PORT as port:
+    with operating(CLI_PORT, timeout=0.2) as port:
         port.write(b'display\n')
         response = [i.decode().strip() for i in port.readlines()[6:14]] # the grabbed [6:14] may not work in the latest firmware
         sense_adjust_info = []
@@ -75,7 +80,8 @@ def get_sensor_sense_adjust(index=None):
             if global_adjust == "+0": global_adjust = "0"
             break
         for area in sensor_area:
-            if area in line: sense_adjust_info = sense_adjust_info + [i.strip() for i in line.split("|")[1:-1]]
+            if area in line:
+                sense_adjust_info = sense_adjust_info + [i.strip() for i in line.split("|")[1:-1]]
 
     for i, adjust in enumerate(sense_adjust_info):
         if adjust != "0":
@@ -99,12 +105,10 @@ def combine_raw_and_sense_adjust(raw, adjust):
 
 # Thanks to @CVSJason(Github) for the reference on touch port communication implementation
 def init_sensor_touch():
-    with TOUCH_PORT as port:
+    with operating(TOUCH_PORT, timeout=0.2) as port:
         port.write(b'{RSET}')
         port.write(b'{HALT}')
         port.write(b'{LAr2}')
-        # while touch.read(6) != b'(LAr2)':
-        #     time.sleep(0.5)
         for area in range(0x41+0x01, 0x62+0x01):
             port.write(b'{L' + bytes([area]) + b'r2}')
         for area in range(0x41, 0x62+0x01):
@@ -119,10 +123,9 @@ def init_sensor_touch():
     return 1
 
 def get_sensor_touch():
-    with TOUCH_PORT as port:
+    with operating(TOUCH_PORT, timeout=0.2) as port:
         response = port.read(9)
     if response == b'': return
-    # if not response.startswith(b'('): response = b'(' + touch.read(8) # The response will get offset if process get lag
     results = []
     for i in range(1, 9):
         results.append(1 if response[i] & 0b1 != 0 else 0)
@@ -133,7 +136,7 @@ def get_sensor_touch():
     return results[0:34]
 
 def stop_get_touch_info():
-    with TOUCH_PORT as port:
+    with operating(TOUCH_PORT, timeout=0.2) as port:
         port.write(b'{HALT}')
     return
 
@@ -145,15 +148,15 @@ def stop_get_sensor_info():
     pass
 
 def program_update():
-    with TOUCH_PORT as port:
+    with operating(TOUCH_PORT, timeout=0.2) as port:
         port.write(b'{HALT}')
-    with CLI_PORT as port:
+    with operating(CLI_PORT, timeout=0.2) as port:
         port.write(b'update\n')
     time.sleep(0.01)
     return
 
 def adjust_sense_reset(area):
-    with CLI_PORT as port:
+    with operating(CLI_PORT, timeout=0.2) as port:
         if area == "g":
             port.write(b'sense 0\n')
         else:
@@ -164,12 +167,14 @@ def adjust_sense(area, value):
     stat = "+" if value > 0 else "-"
     if area == "g":
         for _ in range(abs(value)):
-            with CLI_PORT as port: port.write(f'sense {stat}\n'.encode())
+            with operating(CLI_PORT, timeout=0.2) as port: port.write(f'sense {stat}\n'.encode())
             time.sleep(0.1)
     else:
         for _ in range(abs(value)):
-            with CLI_PORT as port: port.write(f'sense {area} {stat}\n'.encode())
+            with operating(CLI_PORT, timeout=0.2) as port: port.write(f'sense {area} {stat}\n'.encode())
             time.sleep(0.1)
+    with operating(CLI_PORT, timeout=0.2) as port:
+        port.readlines()
 
 if __name__ == "__main__":
     create_connection()

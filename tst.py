@@ -1,27 +1,20 @@
-from tkinter import *
-from PIL import ImageTk, Image
+import tkinter as tk
 
-canvas_size = 500
+def on_key_press(event):
+    # 显示按下的键
+    print(f"Pressed key: {event.keysym}")
 
-class Test:
-    def __init__(self, root):
-        self.root = root
-        self.sensor_canvas = Canvas(self.root, width=canvas_size, height=canvas_size, background='grey')
-        self.sensor_canvas.pack()
-        self.SENSOR_PIC = ImageTk.PhotoImage(Image.open("images/sensor.png").resize((canvas_size,)*2))
-        self.sensor_canvas.create_image(canvas_size/2, canvas_size/2, image=self.SENSOR_PIC)
-        self.btn = Button(self.root, text="Change", command=self.change)
-        self.btn.pack()
+# 创建主窗口
+root = tk.Tk()
+root.title("Key Press Detector")
 
-    def change(self):
-        self.SENSOR_PIC = ImageTk.PhotoImage(Image.open("images/bluesensor.png").resize((canvas_size,)*2))
-        self.sensor_canvas.delete()
-        self.sensor_canvas.create_image(canvas_size/2, canvas_size/2, image=self.SENSOR_PIC)
+# 创建一个标签，用来显示按下的键
+label = tk.Label(root, text="Press any key...")
+label.pack(pady=20)
 
-# import tkinter as tk
-#
+# 将键盘事件绑定到窗口
+root.bind('<KeyPress>', on_key_press)
 
-a = Tk()
-Test(a)
+# 运行主循环
+root.mainloop()
 
-a.mainloop()

@@ -1,13 +1,12 @@
 import time
 import random
 import re
-import tkinter as tk
 
 from preset_var import sensor_info
 
 class CliDevice():
     def __init__(self):
-        self.raw_readings = [random.randint(850,950) for _ in range(34)]
+        self.raw_readings = [random.randint(800,1000) for _ in range(34)]
         self.global_sense_adjusts = 1
         self.sense_adjusts = [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -118,6 +117,18 @@ class TouchDevice:
         # self.controller.mainloop()
         pass
 
+class Operating:
+    def __init__(self, port, timeout=None):
+        self.port = port
+
+    def __enter__(self):
+        return self.port
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
+    # def write(self, command):
+        # self.port.write(command)
 
 if __name__ == "__main__":
     cli = CliDevice()
