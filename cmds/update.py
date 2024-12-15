@@ -1,8 +1,13 @@
 import sys
-sys.path.insert(0, sys.path[0].replace("cmds",""))
+import time
 from tkinter import messagebox
 from communication import program_update
+from preset_var import message_box_prompts
 
-messagebox.showwarning("Exiting", "The program will now exit to update the firmware.")
-program_update()
-sys.exit()
+def main(instance):
+    messagebox.showwarning(*message_box_prompts["Update_firmware"])
+    instance.stop_draw_text = 1
+    instance.stop_draw_touch = 1
+    time.sleep(0.2)
+    program_update()
+    sys.exit()

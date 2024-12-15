@@ -47,12 +47,13 @@ def get_hardware_basic_info():
         port.write(b'?\n')
         response = [i.decode().strip() for i in port.readlines()[:10]]
         basic_info = [i for i in response if "SN" in i][0]
-    basic_info = basic_info + f"\nCli: {CLI_PORT}; Touch: {TOUCH_PORT}"
     try:
         basic_info = basic_info + "\n" + [i for i in response if "Built" in i][0]
     except IndexError:
         pass
+    basic_info = basic_info + f"\nCli: {CLI_PORT}; Touch: {TOUCH_PORT}"
     basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
+    basic_info = basic_info + f"\nHID mode: " + get_hid_mode()
 
     return basic_info
 
@@ -140,19 +141,15 @@ def stop_get_touch_info():
         port.write(b'{HALT}')
     return
 
-def stop_get_sensor_info():
-    # touch.write(b'{HALT}')
-    # touch.close()
-    # cli.close()
-    # return
-    pass
-
 def program_update():
     with operating(TOUCH_PORT, timeout=0.2) as port:
         port.write(b'{HALT}')
     with operating(CLI_PORT, timeout=0.2) as port:
         port.write(b'update\n')
-    time.sleep(0.01)
+        try:
+            port.readlines()
+        except Exception:
+            pass
     return
 
 def adjust_sense_reset(area):
@@ -168,14 +165,26 @@ def adjust_sense(area, value):
     if area == "g":
         for _ in range(abs(value)):
             with operating(CLI_PORT, timeout=0.2) as port: port.write(f'sense {stat}\n'.encode())
-            time.sleep(0.1)
     else:
         for _ in range(abs(value)):
             with operating(CLI_PORT, timeout=0.2) as port: port.write(f'sense {area} {stat}\n'.encode())
-            time.sleep(0.1)
+    time.sleep(0.01)
+    with operating(CLI_PORT, timeout=0.2) as port: port.readlines()
+
+def get_hid_mode():
     with operating(CLI_PORT, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()[-5:]]
+    mode = [i for i in response if "Joy" and "NKRO" in i][0]
+    if "Joy: on" in mode:
+        return "joy"
+    else:
+        return re.search("key\\d", mode).group()
+
+def adjust_hid_mode(mode):
+    with operating(CLI_PORT, timeout=0.2) as port:
+        port.write(f'hid {mode}\n'.encode())
         port.readlines()
 
 if __name__ == "__main__":
-    create_connection()
-    init_sensor_touch()
+    print(get_hid_mode())

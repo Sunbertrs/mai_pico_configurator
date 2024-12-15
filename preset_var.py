@@ -42,7 +42,15 @@ def get_com_list():
 
 sensor_area = tuple([i for i in "ABCDE"])
 
-sensor_number = tuple([i+1 for i in range(8)])
+sensor_info = (
+    "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
+    "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8",
+    "C1", "C2",
+    "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
+    "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
+)
+
+nkro_key = ("wedcxzaq", "89632147")
 
 connect_stat = {
     0: "Click the connect button to start.",
@@ -57,19 +65,9 @@ buttons = {
     "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
     "Test": 'cmds',
-    "Input mode": 'cmds',
+    "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
 }
-
-sensor_info = (
-    "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
-    "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8",
-    "C1", "C2",
-    "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
-    "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
-)
-
-nkro_key = ("wedcxzaq", "89632147")
 
 message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
@@ -78,13 +76,18 @@ message_box_prompts = {
     "Manual_port_repeat": ("Repeated value", "Value can't be the same."),
     "Manual_port_empty": ("Empty value", "Value can't be empty."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
-    "Restart_sense": ("Restart required", "You may need to restart this program to get sensor touch showing.")
+    "Update_firmware": ("Exiting", "The program will now exit to update the firmware.")
 }
 
 sensor_titles_fontset = (
     ImageFont.truetype("fonts/NotoSans.ttf", 53),
-    ImageFont.truetype("fonts/NotoSans.ttf", 30)
+    ImageFont.truetype("fonts/NotoSans.ttf", 30),
+    ImageFont.truetype("fonts/NotoSans.ttf", 41)
 )
+
+key_prompt_position = (130,800)
+
+canvas_center_position = (540,540)
 
 area_title_position = {
     "A1": (670,90),
@@ -163,4 +166,12 @@ area_subtitl_position = {
 cmds_sense_text = (
 	"Type the area using your keyboard.\nPress 'g' for global sensitivity.",
 	"Adjusting: Arrow <Left> or <Right>\n\nBack: <Backspace>\n\nApply: <Enter>",
+)
+
+cmds_hid_text = (
+	"HID mode configuration",
+    "Joy mode (io4)",
+    "Default keyboard 1P",
+    "Default keyboard 2P",
+	"Adjusting: Arrow <Up> or <Down>\n\nApply: <Enter>",
 )

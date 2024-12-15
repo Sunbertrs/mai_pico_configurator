@@ -8,7 +8,14 @@ class CliDevice():
     def __init__(self):
         self.raw_readings = [random.randint(800,1000) for _ in range(34)]
         self.global_sense_adjusts = 1
-        self.sense_adjusts = [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.sense_adjusts = [
+            0, 0, 2, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+        ]
+        self.hid_mode = "key2"
 
     def __enter__(self):
         return self
@@ -29,9 +36,10 @@ class CliDevice():
         elif self.command == b'raw\n': return self.raw()
         elif self.command == b'display\n': return self.display()
         elif self.command.startswith(b'sense'): return self.sense(self.command[5:].decode())
+        elif self.command.startswith(b'hid'): return self.hid(self.command[4:-1].decode())
 
     def help(self):
-        response = ['\t<<Mai Pico Controller>>\r\n','https://...\r\n','\tSN: SimulatingDevice1234\r\n','Built: November 7, 2024\n','Available commands:...\r\n']
+        response = ['\t<<Mai Pico Controller>>\r\n','https://...\r\n','\tSN: SimulatingDevice\r\n','Built: November 7, 2024\n','Available commands:...\r\n']
         return [i.encode() for i in response]
 
     def raw(self):
@@ -60,12 +68,12 @@ class CliDevice():
                     '   E | '+re.sub("[\\[\\]]", "",str(self.sense_adjusts[26:34])).replace(',',' |')+' |\r\n',
                     '  Debounce (touch, release): 1, 2\r\n',
                     '[HID]\r\n',
-                    '  Joy: off, NKRO: key1\r\n',
+                    '  Joy: on, NKRO: off\r\n' if self.hid_mode == "joy" else f'  Joy: off, NKRO: {self.hid_mode}\r\n',
                     'mai_pico>']
         return [i.encode() for i in response]
 
-    def sense(self, cmd):
-        arg = cmd.split()
+    def sense(self, args):
+        arg = args.split()
         if len(arg) == 1:
             if arg[0] == "+":   self.global_sense_adjusts += 1
             elif arg[0] == "-": self.global_sense_adjusts -= 1
@@ -77,6 +85,12 @@ class CliDevice():
         print(f"[Cli device] Global {self.global_sense_adjusts:+}\n  {self.sense_adjusts}")
         response = ['Save requested.\r\n']
         return [i.encode() for i in response]
+
+    def hid(self, arg):
+        if arg in ("key1","key2","joy"): self.hid_mode = arg
+        response = ['Save requested.\r\n']
+        return [i.encode() for i in response]
+
 
 class TouchDevice:
     def __init__(self):
@@ -133,4 +147,6 @@ class Operating:
 if __name__ == "__main__":
     cli = CliDevice()
     touch = TouchDevice()
-    cli.display()
+    cli.write(b"hid key2\n")
+    cli.write(b"display\n")
+    print(cli.readlines())
