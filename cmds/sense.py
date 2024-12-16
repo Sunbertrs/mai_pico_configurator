@@ -1,5 +1,5 @@
 import sys
-import threading
+from threading import Thread
 sys.path.insert(0, sys.path[0].replace("cmds",""))
 from PIL import Image, ImageDraw
 
@@ -96,4 +96,4 @@ def apply_sensitivity_settings(area, value):
     # _inst.stop_draw_touch = 1
     adjust_sense_reset(area)
     adjust_sense(area, value)
-    threading.Thread(target=_inst.done_command, args=("sense",)).start()
+    Thread(target=_inst.done_command, args=("refresh",)).start()

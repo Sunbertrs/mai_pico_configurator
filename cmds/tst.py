@@ -3,7 +3,7 @@ from PIL import ImageTk, Image
 
 from communication import create_connection
 from preset_var import canvas_size
-from cmds.hid import main
+from cmds.aime import main
 
 class Test:
     def __init__(self, root):
@@ -11,6 +11,7 @@ class Test:
         self.c = tk.Canvas(self.root, width=canvas_size, height=canvas_size, bg="black")
         self.c.pack()
         self.canvas_handler = EditSensorCanvas(self.c)
+        create_connection()
         main(self)
         root.mainloop()
 

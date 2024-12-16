@@ -76,7 +76,8 @@ message_box_prompts = {
     "Manual_port_repeat": ("Repeated value", "Value can't be the same."),
     "Manual_port_empty": ("Empty value", "Value can't be empty."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
-    "Update_firmware": ("Exiting", "The program will now exit to update the firmware.")
+    "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
+    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one.")
 }
 
 sensor_titles_fontset = (
@@ -173,5 +174,12 @@ cmds_hid_text = (
     "Joy mode (io4)",
     "Default keyboard 1P",
     "Default keyboard 2P",
-	"Adjusting: Arrow <Up> or <Down>\n\nApply: <Enter>",
+	"Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
+)
+
+cmds_aime_text = (
+	"Aime configuration",
+    "Virtual AIC",
+    "Protocol mode",
+	"Switch option: Arrow <Up> or <Down>\n\nAdjust: Arrow <Left> or <Right>\n\nApply: <Enter>",
 )

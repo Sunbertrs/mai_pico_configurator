@@ -48,7 +48,7 @@ class MainUI:
         self.current_stat.grid(row=0, sticky="NW")
         self.basic_info_label = Label(self.basic_info_frame, text="SN: -")
         self.basic_info_label.grid(row=1, pady=10, sticky="NW")
-        self.basic_info_frame.grid_rowconfigure(1, minsize=110)
+        self.basic_info_frame.grid_rowconfigure(1, minsize=150)
 
         Separator(self.display_area, orient="horizontal").grid(row=4, sticky="WE")
 
@@ -121,7 +121,7 @@ class MainUI:
     def execute_command(self, name, cmd):
         self.current_stat['text'] = connect_stat[2] + name + "."
         self.root.bind("<KeyPress-Escape>", lambda _: self.done_command("esc"))
-        time.sleep(0.8)
+        time.sleep(0.3)
         exec(f"from {cmd} import main as _command_main\n_command_main(self)")
 
     def done_command(self, cmd):
@@ -129,8 +129,7 @@ class MainUI:
         self.current_stat['text'] = connect_stat[1]
         if cmd == "esc":
             self.stop_draw_text = 0
-        if cmd in ("sense", "hid"):
-            time.sleep(0.8)
+        if cmd == "refresh":
             self.basic_info_label['text'] = get_hardware_basic_info()
             self.stop_draw_text = 0
 
