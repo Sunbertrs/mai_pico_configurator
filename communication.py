@@ -1,5 +1,4 @@
 import serial
-import time
 import yaml
 import re
 
@@ -27,32 +26,39 @@ def check_connect():
         return stat
 
 def create_connection():
-    global CLI_PORT, TOUCH_PORT
+    global cli_port, touch_port, operating
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
     if not no_device_debug:
-        CLI_PORT = serial.Serial(config['cli_port'], timeout=0.5)
-        TOUCH_PORT = serial.Serial(config['touch_port'], timeout=0.15)
+        operating = serial.Serial
+        cli_port = config['cli_port']
+        touch_port = config['touch_port']
     else:
         import device_simulate
-        CLI_PORT = device_simulate.CliDevice()
-        TOUCH_PORT = device_simulate.TouchDevice()
+        operating = device_simulate.Operating
+        cli_port = device_simulate.CliDevice()
+        touch_port = device_simulate.TouchDevice()
 
 def get_hardware_basic_info():
-    with CLI_PORT as port:
+    with operating(cli_port, timeout=0.2) as port:
         port.write(b'?\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        basic_info = [i for i in response if "SN" in i ][0]
-
+        response = [i.decode().strip() for i in port.readlines()[:8]]
+        basic_info = [i for i in response if "SN" in i][0]
     try:
         basic_info = basic_info + "\n" + [i for i in response if "Built" in i][0]
     except IndexError:
         pass
+    basic_info = basic_info + f"\nCli: {cli_port}; Touch: {touch_port}"
+    basic_info = basic_info + f"\nBrightness level: " + get_brightness_level()
+    basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
+    hid_stat = get_hid_mode()
+    basic_info = basic_info + f"\nHID mode: " + ("!!! Button is stuck, force using io4 now !!!" if hid_stat[-1] == "!" else hid_stat)
+    basic_info = basic_info + f"\nNFC module: " + get_aime_info()
 
     return basic_info
 
 def get_sensor_raw_readings():
-    with CLI_PORT as port:
+    with operating(cli_port, timeout=0.2) as port:
         port.write(b'raw\n')
         response = [i.decode().strip() for i in port.readlines()]
         raw_info = []
@@ -64,29 +70,26 @@ def get_sensor_raw_readings():
     return raw_info
 
 def get_sensor_sense_adjust(index=None):
-    with CLI_PORT as port:
+    with operating(cli_port, timeout=0.2) as port:
         port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()[6:14]] # the grabbed [6:14] may not work in the latest firmware
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[Sense]")+1:response.index("[Sense]")+10]
         sense_adjust_info = []
-
     for line in response:
         if index == "g" and "global" in line:
             global_adjust = re.sub("[^\\+\\-0-9]", "", line)
             if global_adjust == "+0": global_adjust = "0"
-            break
+            return global_adjust
         for area in sensor_area:
-            if area in line: sense_adjust_info = sense_adjust_info + [i.strip() for i in line.split("|")[1:-1]]
-
+            if area in line:
+                sense_adjust_info = sense_adjust_info + [i.strip() for i in line.split("|")[1:-1]]
     for i, adjust in enumerate(sense_adjust_info):
         if adjust != "0":
             sense_adjust_info[i] = f"+{sense_adjust_info[i]}" if len(sense_adjust_info[i]) == 1 else f"-{256-int(sense_adjust_info[i])}"
         else:
             sense_adjust_info[i] = "0"
-
     if index is None:
         return sense_adjust_info
-    elif index == "g":
-        return global_adjust
     else:
         return sense_adjust_info[index]
 
@@ -97,14 +100,87 @@ def combine_raw_and_sense_adjust(raw, adjust):
 
     return result
 
+def adjust_sense_reset(area):
+    with operating(cli_port, timeout=0.2) as port:
+        if area == "g":
+            port.write(b'sense 0\n')
+        else:
+            port.write(f'sense {area} 0\n'.encode())
+        port.readlines()
+
+def adjust_sense(area, value):
+    stat = "+" if value > 0 else "-"
+    for _ in range(abs(value)-1):
+        if area == "g":
+            with operating(cli_port, timeout=0.2) as port: port.write(f'sense {stat}\n'.encode())
+        else:
+            with operating(cli_port, timeout=0.2) as port: port.write(f'sense {area} {stat}\n'.encode())
+    with operating(cli_port, timeout=0.2) as port: port.readlines()
+
+def get_hid_mode(ignore_stuck=None):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[HID]")+1:response.index("[HID]")+3]
+    if "Joy: on" in response or "IO4: on" in response[0]:
+        stat = "io4"
+    else:
+        stat = response[0][response[0].index("key"):response[0].index("key")+4]
+    if not ignore_stuck and response[1].startswith("!!!"):
+        stat += "!"
+    return stat
+
+def adjust_hid_mode(mode):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(f'hid {mode}\n'.encode())
+        port.readlines()
+
+def get_aime_info(more=None):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'aime\n')
+        response = [i.decode().strip() for i in port.readlines()]
+    if response[1] == "Unknown command.":
+        return "Unsupported"
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[AIME]")+1:response.index("[AIME]")+4]
+    if not more:
+        return response[0].replace('NFC Module: ','')
+    else:
+        return (
+            response[1].replace('Virtual AIC: ',''),
+            response[2].replace('Protocol Mode: ','')
+        )
+
+def adjust_aime_virtual_aic(value):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(f'aime virtual {value.lower()}\n'.encode())
+        port.readlines()
+
+def adjust_aime_protocol_mode(value):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(f'aime mode {value}\n'.encode())
+        port.readlines()
+
+def get_brightness_level():
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[RGB]")+3].replace("Level: ", "")
+        return response
+
+def adjust_brightness_level(value):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(f'level {value}\n'.encode())
+        port.readlines()
+
 # Thanks to @CVSJason(Github) for the reference on touch port communication implementation
 def init_sensor_touch():
-    with TOUCH_PORT as port:
+    with operating(touch_port, timeout=0.2) as port:
         port.write(b'{RSET}')
         port.write(b'{HALT}')
         port.write(b'{LAr2}')
-        # while touch.read(6) != b'(LAr2)':
-        #     time.sleep(0.5)
         for area in range(0x41+0x01, 0x62+0x01):
             port.write(b'{L' + bytes([area]) + b'r2}')
         for area in range(0x41, 0x62+0x01):
@@ -119,10 +195,9 @@ def init_sensor_touch():
     return 1
 
 def get_sensor_touch():
-    with TOUCH_PORT as port:
+    with operating(touch_port, timeout=0.2) as port:
         response = port.read(9)
     if response == b'': return
-    # if not response.startswith(b'('): response = b'(' + touch.read(8) # The response will get offset if process get lag
     results = []
     for i in range(1, 9):
         results.append(1 if response[i] & 0b1 != 0 else 0)
@@ -133,44 +208,21 @@ def get_sensor_touch():
     return results[0:34]
 
 def stop_get_touch_info():
-    with TOUCH_PORT as port:
+    with operating(touch_port, timeout=0.2) as port:
+        port.write(b'{RSET}')
         port.write(b'{HALT}')
     return
-
-def stop_get_sensor_info():
-    # touch.write(b'{HALT}')
-    # touch.close()
-    # cli.close()
-    # return
-    pass
 
 def program_update():
-    with TOUCH_PORT as port:
-        port.write(b'{HALT}')
-    with CLI_PORT as port:
+    stop_get_touch_info()
+    with operating(touch_port, timeout=0.2) as port:
         port.write(b'update\n')
-    time.sleep(0.01)
+        try:
+            port.readlines()
+        except Exception:
+            pass
     return
-
-def adjust_sense_reset(area):
-    with CLI_PORT as port:
-        if area == "g":
-            port.write(b'sense 0\n')
-        else:
-            port.write(f'sense {area} 0\n'.encode())
-    time.sleep(0.01)
-
-def adjust_sense(area, value):
-    stat = "+" if value > 0 else "-"
-    if area == "g":
-        for _ in range(abs(value)):
-            with CLI_PORT as port: port.write(f'sense {stat}\n'.encode())
-            time.sleep(0.1)
-    else:
-        for _ in range(abs(value)):
-            with CLI_PORT as port: port.write(f'sense {area} {stat}\n'.encode())
-            time.sleep(0.1)
 
 if __name__ == "__main__":
     create_connection()
-    init_sensor_touch()
+    print(get_brightness_level())

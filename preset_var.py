@@ -1,26 +1,59 @@
 from PIL import ImageFont
 import screeninfo
+import yaml
+import subprocess
 
 no_device_debug = False
 
+with open("config.yaml") as f:
+    config_file = yaml.safe_load(f)
+
 def get_canvas_size():
-    mornitor_info = screeninfo.get_monitors()
+    monitor_info = screeninfo.get_monitors()
     size = 500
-    if len(mornitor_info) > 1:
-        for mornitor in mornitor_info:
-            if mornitor.width < mornitor.height: size = 1080
-    else:
-        if mornitor_info[0].width < mornitor_info[0].height: size = 1080
+    if config_file["auto_large_ui"]:
+        for monitor in monitor_info:
+            if monitor.width < monitor.height: size = 1080
     return size
 
 canvas_size = get_canvas_size()
 
+def get_com_list():
+    subprocess.run(['powershell', """
+        $number = (Get-WMIObject Win32_PnPEntity | Where-Object {$_.name -match "com\\d"}).Name
+        try{
+            $name = (Get-WMIObject Win32_PnPEntity | Where-Object {$_.name -match "com\\d"}).GetDeviceProperties("DEVPKEY_Device_BusReportedDeviceDesc").deviceProperties.Data
+        }catch{
+            exit
+        }
+        $i=0
+        foreach($num in $number){
+            $num = $num -replace "[^com\\d\\d]", ""
+            if($exist -eq 1){
+                break
+            }else{
+                [PSCustomObject]@{ Number = $num; Name = $name[$i] } | Export-Csv -NoTypeInformation -Path ./com_list.csv -Append
+                $exist=1
+            }
+            $i++
+            $exist=0
+        }
+    """])
+
 sensor_area = tuple([i for i in "ABCDE"])
 
-sensor_number = tuple([i+1 for i in range(8)])
+SENSOR_INFO = (
+    "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
+    "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8",
+    "C1", "C2",
+    "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
+    "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
+)
+
+nkro_key = ("wedcxzaq", "89632147")
 
 connect_stat = {
-    0: "Program is not connect to port. Click the connect button to start.",
+    0: "Click the connect button to start.",
     1: "Program is running normally.",
     2: "Program is executing ",
     3: "",
@@ -32,32 +65,34 @@ buttons = {
     "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
     "Test": 'cmds',
-    "Input mode": 'cmds',
+    "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
 }
 
-sensor_info = (
-    "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8",
-    "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8",
-    "C1", "C2",
-    "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
-    "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
-)
-
-nkro_key = ("wedcxzaq", "89632147")
-
 message_box_prompts = {
-    "Denied": ("Error", "Unable to connect to the port, please make sure it is not in use."),
-    "Reconfig": ("COM port reconfigured", "We reconfigured The port settings now because the config didn't configure correctly.\nThe program will now exit to update the settings.\n\nIf the port is still incorrect, please manually correct it in config.yaml."),
-    "Not_detected": ("Error", "Failed to connect to the port, please make sure it is connected."),
-    "Unable_execute": ("Error", "Unable execute this without device connected."),
+    "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
+    "Reconfig": ("COM port reconfigured", "Port settings have reconfigured, please click the connect button again to try.\nIf the port is still incorrect, please manually correct it in config.yaml."),
+    "Not_detected": ("Error", "Failed to connect to the port, make sure it is connected, and Powershell is not disabled."),
     "Manual_port_repeat": ("Repeated value", "Value can't be the same."),
     "Manual_port_empty": ("Empty value", "Value can't be empty."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
-    "Restart_sense": ("Restart required", "You may need to restart this program to get sensor touch showing.")
+    "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
+    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one.")
 }
 
-sensor_titles_fontset = (ImageFont.truetype("C:/Windows/Fonts/Consola.ttf", 53), ImageFont.truetype("C:/Windows/Fonts/msgothic.ttc", 30))
+CANVAS_FONT_SET = (
+    ImageFont.truetype("fonts/NotoSans.ttf", 53),
+    ImageFont.truetype("fonts/NotoSans.ttf", 30),
+    ImageFont.truetype("fonts/NotoSans.ttf", 41)
+)
+
+CMD_TITLE_POSITION = (540,300)
+
+SETTINGS_SPACING = 85
+
+KEY_PROMPTING_POSITION = (130,800)
+
+CANVAS_CENTER_POSITION = (540,540)
 
 area_title_position = {
     "A1": (670,90),
@@ -65,7 +100,7 @@ area_title_position = {
     "A3": (900,650),
     "A4": (670,900),
     "A5": (340,900),
-    "A6": (110,660),
+    "A6": (110,650),
     "A7": (110,320),
     "A8": (340,90),
     "B1": (600,290),
@@ -87,19 +122,19 @@ area_title_position = {
     "D7": (50,490),
     "D8": (180,170),
     "E1": (510,180),
-    "E2": (730,280),
+    "E2": (730,270),
     "E3": (820,490),
     "E4": (730,710),
     "E5": (510,800),
     "E6": (290,710),
     "E7": (200,490),
-    "E8": (290,280)
+    "E8": (290,270)
 }
 
 area_subtitl_position = {
     "A1": (680,150),
     "A2": (920,370),
-    "A3": (910,710),
+    "A3": (910,720),
     "A4": (680,960),
     "A5": (350,960),
     "A6": (120,720),
@@ -132,3 +167,24 @@ area_subtitl_position = {
     "E7": (210,550),
     "E8": (300,330)
 }
+
+cmds_sense_text = (
+    "Sensitivity configuration",
+	"Type the area using your keyboard.\n\nPress 'g' for global sensitivity.",
+	"Adjusting: Arrow <Left> or <Right>\n\nBack: <Backspace>\n\nApply: <Enter>",
+)
+
+cmds_hid_text = (
+	"HID mode configuration",
+    "Joy mode (io4)",
+    "Default keyboard 1P",
+    "Default keyboard 2P",
+	"Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
+)
+
+cmds_aime_text = (
+	"Aime configuration",
+    "Virtual AIC",
+    "Protocol mode",
+	"Switch option: Arrow <Up> or <Down>\n\nAdjust: Arrow <Left> or <Right>\n\nApply: <Enter>",
+)

@@ -2,14 +2,21 @@
 # Do not wrap any lines in this file.
 
 # Command line port and touch port config.
-# Windows: starts with COM, Linux or etc: starts with /dev...
+# Windows: starts with COM, Linux or etc.: starts with /dev/tty
 cli_port: 'COM36'
 touch_port: 'COM2'
 
-# Show the sensitivity adjustment after raw readings.
-# E.g. 930(+1), 970(-3)
+# Allow to modify the value of cli_port/touch_port in this file if you set them wrong.
+# Recommended if your list of COM port is messy. It relies on powershell.
+auto_port_config: True
+
+# Switch to a larger interface when a screen which is displaying in portrait was found.
+auto_large_ui: True
+
+# Show the sensitivity adjustment after the raw readings.
+# Such as: 900(+1), 970(-3)
 always_show_sense_adjust: True
 
-# The interval time to refresh the raw readings.
-# Cannot be left blank or set to 0.
+# The interval time to refresh the sensor raw readings.
+# Set to 0 will show the raw readings only once after connected or the command was done.
 raw_readings_interval_time: 1.5

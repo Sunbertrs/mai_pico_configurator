@@ -1,6 +1,4 @@
-future~=1.0.0
-pillow~=10.3.0
 PyYAML~=6.0.1
 screeninfo~=0.8.1
-serial~=0.0.97
 pyserial~=3.5
+pillow~=10.3.0
