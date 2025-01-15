@@ -23,9 +23,9 @@ def draw_text():
     draw = ImageDraw.Draw(sensor_name_stat)
     raw_readings = combine_raw_and_sense_adjust(get_sensor_raw_readings(), get_sensor_sense_adjust()) if SHOW_SENSE_ADJUST else get_sensor_raw_readings()
     for title, pos in area_title_position.items():
-        draw.text(pos, title, font=CANVAS_FONT_SET[0])
+        draw.text(pos, title, font=CANVAS_FONT_SET[0], fill="#000")
     for subtitl, pos in zip(raw_readings, area_subtitl_position.values()):
-        draw.text(pos, subtitl, font=CANVAS_FONT_SET[1])
+        draw.text(pos, subtitl, font=CANVAS_FONT_SET[1], fill="#000")
     return sensor_name_stat.resize((canvas_size,) * 2)
 
 def draw_touch():

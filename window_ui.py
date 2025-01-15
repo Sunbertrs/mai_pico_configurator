@@ -57,7 +57,7 @@ class MainUI:
         # ---
         self.sensor_frame.grid(row=5, sticky="NSEW")
         self.display_area.grid_rowconfigure(5, weight=1)
-        self.sensor_canvas = Canvas(self.sensor_frame, width=canvas_size, height=canvas_size, background='grey')
+        self.sensor_canvas = Canvas(self.sensor_frame, width=canvas_size, height=canvas_size) # background='grey'
         self.sensor_canvas.pack(anchor=S, expand=1)
         self.SENSOR_PIC = ImageTk.PhotoImage(Image.open("images/sensor.png").resize((canvas_size,)*2))
         self.sensor_canvas.create_image(canvas_size/2, canvas_size/2, image=self.SENSOR_PIC)
@@ -152,7 +152,10 @@ class MainUI:
     def exiting(self):
         self.stop_draw_text = 1
         self.stop_draw_touch = 1
-        stop_get_touch_info()
+        try:
+            stop_get_touch_info()
+        except Exception:
+            pass
         sys.exit()
 
 class CanvasHandler:
