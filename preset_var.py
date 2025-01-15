@@ -62,9 +62,9 @@ connect_stat = {
 buttons = {
     "Sensitivity adjust": 'cmds.sense',
     "LED brightness": 'cmds.level',
-    "Buttons adjust": 'cmds',
+    # "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
-    "Test": 'cmds',
+    #"Test": 'cmds',
     "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
 }
@@ -73,8 +73,9 @@ message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
     "Reconfig": ("COM port reconfigured", "Port settings have reconfigured, please click the connect button again to try.\nIf the port is still incorrect, please manually correct it in config.yaml."),
     "Not_detected": ("Error", "Failed to connect to the port, make sure it is connected, and Powershell is not disabled."),
-    "Manual_port_repeat": ("Repeated value", "Value can't be the same."),
-    "Manual_port_empty": ("Empty value", "Value can't be empty."),
+    "Manual_port_repeat": ("Repeated value", "The value can't be the same."),
+    "Manual_port_empty": ("Empty value", "The value can't be empty."),
+    "Manual_port_illegal": ("Illegal value", "The value is illegal."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
     "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
     "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one.")
@@ -179,6 +180,7 @@ cmds_hid_text = (
     "Joy mode (io4)",
     "Default keyboard 1P",
     "Default keyboard 2P",
+    "Off",
 	"Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
 )
 

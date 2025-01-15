@@ -95,9 +95,7 @@ class MainUI:
             self.manual_config()
 
     def manual_config(self):
-        manual_select_window = Tk()
-        ManualSelectPort(manual_select_window)
-        manual_select_window.mainloop()
+        ManualSelectPort(Toplevel())
         return
 
     def try_auto_config(self):
@@ -132,7 +130,7 @@ class MainUI:
         self.current_stat['text'] = connect_stat[1]
         if cmd == "esc":
             self.stop_draw_text = 0
-        if cmd == "refresh":
+        elif cmd == "refresh":
             self.basic_info_label['text'] = get_hardware_basic_info()
             self.stop_draw_text = 0
 
@@ -192,7 +190,7 @@ class ManualSelectPort:
         self.root.geometry("380x250")
         root.resizable(False, False)
 
-        self.hint = Label(self.root, text="We can't determine the COM ports.\nPlease specify your ports manually.")
+        self.hint = Label(self.root, text="Specify the serial ports manually.")
         self.hint.grid(row=0, column=0, columnspan=2, padx=15, pady=15, sticky="W")
 
         self.select_list = [
@@ -205,15 +203,21 @@ class ManualSelectPort:
             widget[0].grid(row=i+1,column=0, padx=15, pady=15, sticky='W')
             widget[1].grid(row=i+1, column=1)
 
-        Button(self.root, text='OK', command=self.validate_config).grid(row=3, pady=10)
+        Button(self.root, text='OK', command=self.validate_config).grid(row=3, padx=15, pady=10)
 
     def validate_config(self):
-        if self.select_list[0][1].get() == self.select_list[1][1].get():
+        _cli_port = self.select_list[0][1].get()
+        _touch_port = self.select_list[1][1].get()
+        if _cli_port == _touch_port:
             messagebox.showwarning(*message_box_prompts["Manual_port_repeat"])
             self.root.destroy()
             return
-        elif self.select_list[0][1].get() == '' or self.select_list[1][1].get() == '':
+        elif _cli_port == '' or _touch_port == '':
             messagebox.showwarning(*message_box_prompts["Manual_port_empty"])
+            self.root.destroy()
+            return
+        elif not _cli_port.startswith(("COM", "/dev/")) or not _touch_port.startswith(("COM", "/dev/")):
+            messagebox.showwarning(*message_box_prompts["Manual_port_illegal"])
             self.root.destroy()
             return
         self.write_config()
