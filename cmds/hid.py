@@ -18,7 +18,6 @@ def main(instance):
 def selection(image, current):
     draw = ImageDraw.Draw(image)
     option = ("io4", "key1", "key2") + (("off",) if get_hid_off_mode_availability() else ())
-    print(option)
     for i, j in enumerate(option, start=1):
         draw.text((CMD_TITLE_POSITION[0],CMD_TITLE_POSITION[1]+SETTINGS_SPACING*i+50),
                   cmds_hid_text[i],
