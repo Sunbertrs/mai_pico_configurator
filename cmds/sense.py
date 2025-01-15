@@ -14,8 +14,8 @@ def main(instance):
 
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[1], font=CANVAS_FONT_SET[1])
+    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[1], font=CANVAS_FONT_SET[1], fill="#000")
     
     prompt_image = prompt_image.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(prompt_image)
@@ -32,8 +32,8 @@ def select_number(event):
     
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(CANVAS_CENTER_POSITION, pressed_key, font=CANVAS_FONT_SET[0], anchor="mm")
+    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(CANVAS_CENTER_POSITION, pressed_key, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
     
     prompt_image = prompt_image.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(prompt_image)
@@ -51,19 +51,19 @@ def sensitivity_adjust(selected_area):
     draw = ImageDraw.Draw(prompt_image)
 
     if selected_area != "g":
-        draw.text(CANVAS_CENTER_POSITION, selected_area, font=CANVAS_FONT_SET[0], anchor="mm")
+        draw.text(CANVAS_CENTER_POSITION, selected_area, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
     else:
-        draw.text(CANVAS_CENTER_POSITION, "Global", font=CANVAS_FONT_SET[0], anchor="mm")
+        draw.text(CANVAS_CENTER_POSITION, "Global", font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
 
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[2], font=CANVAS_FONT_SET[1])
+    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[2], font=CANVAS_FONT_SET[1], fill="#000")
 
     prompt_image_edited = prompt_image.copy()
     draw = ImageDraw.Draw(prompt_image_edited)
 
     adjusts_value:str = get_sensor_sense_adjust(index=SENSOR_INFO.index(selected_area)) if selected_area != "g" else get_sensor_sense_adjust(index=selected_area)
 
-    draw.text(SENSE_ADJUST_POSITION, adjusts_value, font=CANVAS_FONT_SET[2], anchor="mm")
+    draw.text(SENSE_ADJUST_POSITION, adjusts_value, font=CANVAS_FONT_SET[2], anchor="mm", fill="#E00")
 
     prompt_image_edited = prompt_image_edited.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(prompt_image_edited)
@@ -80,7 +80,7 @@ def sensitivity_adjusting(image, area, stat, value:int):
     prompt_image = image.copy()
     draw = ImageDraw.Draw(prompt_image)
 
-    draw.text(SENSE_ADJUST_POSITION, f"{value:+}" if value != 0 else "0", font=CANVAS_FONT_SET[2], anchor="mm")
+    draw.text(SENSE_ADJUST_POSITION, f"{value:+}" if value != 0 else "0", font=CANVAS_FONT_SET[2], anchor="mm", fill="#E00")
 
     prompt_image = prompt_image.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(prompt_image)

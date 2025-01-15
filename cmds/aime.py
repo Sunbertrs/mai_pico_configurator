@@ -7,7 +7,6 @@ from communication import get_aime_info, adjust_aime_virtual_aic, adjust_aime_pr
 def main(instance):
     global _inst
     _inst = instance
-    _inst.stop_draw_text = 1
 
     status = get_aime_info()
     if status == "Unsupported":
@@ -19,9 +18,9 @@ def main(instance):
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
 
-    draw.text(CMD_TITLE_POSITION, cmds_aime_text[0], font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_aime_text[3], font=CANVAS_FONT_SET[1])
-    draw.text((540,640), f"NFC module - {status}", font=CANVAS_FONT_SET[2], anchor="mm")
+    draw.text(CMD_TITLE_POSITION, cmds_aime_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, cmds_aime_text[3], font=CANVAS_FONT_SET[1], fill="#000")
+    draw.text((540,640), f"NFC module - {status}", font=CANVAS_FONT_SET[2], anchor="mm", fill="#000")
     select_option(list(get_aime_info(more=1)), 0)
 
 def select_option(settings, current):
@@ -34,7 +33,7 @@ def select_option(settings, current):
                   (f'{j:<20}' if i == 1 else f'{j:<17}') + f'{aime_settings[i-1]:>3}',
                   font=CANVAS_FONT_SET[2],
                   anchor="mm",
-                  fill="orange" if current == i-1 else "white")
+                  fill="#E00" if current == i-1 else "#000")
     image = image.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(image)
     if current == 0:

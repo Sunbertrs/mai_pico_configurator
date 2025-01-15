@@ -10,8 +10,8 @@ def main(instance):
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
 
-    draw.text(CMD_TITLE_POSITION, cmds_hid_text[0], font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_hid_text[4], font=CANVAS_FONT_SET[1])
+    draw.text(CMD_TITLE_POSITION, cmds_hid_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, cmds_hid_text[4], font=CANVAS_FONT_SET[1], fill="#000")
 
     selection(prompt_image, get_hid_mode(ignore_stuck=1))
 
@@ -22,7 +22,7 @@ def selection(image, current):
                   cmds_hid_text[i],
                   font=CANVAS_FONT_SET[2],
                   anchor="mm",
-                  fill="orange" if current == j else "white")
+                  fill="#E00" if current == j else "#000")
     prompt_image = image.resize((canvas_size,) * 2)
     _inst.canvas_handler.set_text(prompt_image)
 
