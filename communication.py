@@ -110,7 +110,7 @@ def adjust_sense_reset(area):
 
 def adjust_sense(area, value):
     stat = "+" if value > 0 else "-"
-    for _ in range(abs(value)-1):
+    for _ in range(abs(value)):
         if area == "g":
             with operating(cli_port, timeout=0.2) as port: port.write(f'sense {stat}\n'.encode())
         else:
@@ -215,7 +215,7 @@ def stop_get_touch_info():
 
 def program_update():
     stop_get_touch_info()
-    with operating(touch_port, timeout=0.2) as port:
+    with operating(cli_port, timeout=0.2) as port:
         port.write(b'update\n')
         try:
             port.readlines()
