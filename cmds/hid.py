@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 
 from preset_var import canvas_size, CANVAS_FONT_SET, cmds_hid_text, KEY_PROMPTING_POSITION, CMD_TITLE_POSITION, SETTINGS_SPACING
-from communication import adjust_hid_mode, get_hid_mode
+from communication import adjust_hid_mode, get_hid_mode, get_hid_off_mode_availability
 
 def main(instance):
     global _inst
@@ -11,13 +11,15 @@ def main(instance):
     draw = ImageDraw.Draw(prompt_image)
 
     draw.text(CMD_TITLE_POSITION, cmds_hid_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
-    draw.text(KEY_PROMPTING_POSITION, cmds_hid_text[4], font=CANVAS_FONT_SET[1], fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, cmds_hid_text[5], font=CANVAS_FONT_SET[1], fill="#000")
 
     selection(prompt_image, get_hid_mode(ignore_stuck=1))
 
 def selection(image, current):
     draw = ImageDraw.Draw(image)
-    for i, j in enumerate(("io4", "key1", "key2"), start=1):
+    option = ("io4", "key1", "key2") + (("off",) if get_hid_off_mode_availability() else ())
+    print(option)
+    for i, j in enumerate(option, start=1):
         draw.text((CMD_TITLE_POSITION[0],CMD_TITLE_POSITION[1]+SETTINGS_SPACING*i+50),
                   cmds_hid_text[i],
                   font=CANVAS_FONT_SET[2],
@@ -33,6 +35,9 @@ def selection(image, current):
         _inst.root.bind("<KeyPress-Down>", lambda _: selection(image, "key2"))
     elif current == "key2":
         _inst.root.bind("<KeyPress-Up>", lambda _: selection(image, "key1"))
+        if len(option) == 4: _inst.root.bind("<KeyPress-Down>", lambda _: selection(image, "off"))
+    elif current == "off":
+        _inst.root.bind("<KeyPress-Up", lambda _: selection(image, "key1"))
     _inst.root.bind("<KeyPress-Return>", lambda _: apply_hid(current))
 
 def apply_hid(current):

@@ -117,6 +117,15 @@ def adjust_sense(area, value):
             with operating(cli_port, timeout=0.2) as port: port.write(f'sense {area} {stat}\n'.encode())
     with operating(cli_port, timeout=0.2) as port: port.readlines()
 
+def get_hid_off_mode_availability():
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'hid\n')
+        response = [i.decode().strip() for i in port.readlines()]
+    if "off" in response[0]:
+        return 1
+    else:
+        return 0
+
 def get_hid_mode(ignore_stuck=None):
     with operating(cli_port, timeout=0.2) as port:
         port.write(b'display\n')
