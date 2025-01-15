@@ -4,45 +4,49 @@ This is a visualize configurator for [mai_pico](https://github.com/whowechina/ma
 
 ## Screenshots
 
+![](images/app-screenshot.png)
+
 ## To-do
 
-- Rewrite some logic on displaying sensor canvas.
-
-- Full support for non Windows platforms.
+- Support for non Windows platforms.
 
 - Add more functions.
 
-Welcome suggestions for new features, bug report ~or pull requests~.
+Any suggestions for new features, bug report ~~or pull requests~~ are welcome.
 
-The project is still in developing now, and haven't been release yet. Stay tuned!
+The project is still under development, the stable version will be released soon. Stay tuned!
 
 ## Introduction
 
-The project provides a GUI for the project [mai_pico](https://github.com/whowechina/mai_pico), to help you adjust the settings with only a few clicks.
+The project provides a configuration GUI for the project [mai_pico](https://github.com/whowechina/mai_pico).
+
+Mainly relies on communicating with the CLI serial port, and parsing the response text from CLI serial port.
+
+For the first time use, you need to ensure that you have installed the Python which version is larger than 3.8, and run `pip install -r requirements.txt` in this project directory.
 
 Run command `py main.py` **in this project directory** to start this program, and click `Connect` button to connect to your device and use.
 
-For the first time use, you need to ensure that Python which version is larger than 3.8 was installed, and run `pip install -r requirements.txt` in this project directory.
-
 ### Features
 
-- Detect and show in a larger interface automatically if you are using dual screens and/or your screen is displaying in portrait. You can disable this feature in `config.yaml`.
+- It is possible to run on non Windows platforms.
 
-- Automatically get the COM port information and apply config if you don't config it properly. It works on Windows and implements with Powershell. Can also be disabled in `config.yaml`.
+- Show in a larger interface if you are using dual screens and/or your screen is displaying in portrait. You can disable this feature in `config.yaml`.
+
+- Automatically get the COM port information and modify the config if you don't config it properly. It works on Windows and implements with Powershell. This can also be disabled in `config.yaml`.
 
 - Real-time displaying of its sensor raw readings, sensitivity adjustment, and sensor touching.
 
 ### Sensitivity adjust
 
-Click the "Sensitivity adjust" button, type the area you want to adjust, and adjust it using arrow `←` or `→`. Then apply the changes with a Enter.
+After clicking the "Sensitivity adjust", type the area you want to adjust using your keyboard, and adjust it using arrow `←` or `→`. Then apply the changes with Enter.
 
 You can turn back to the main screen by pressing Esc.
 
 ### LED brightness
 
-Click the "LED brightness" button, and on the popped up window, slide the slider to adjust the brightness level.
+After clicking the "LED brightness", slide the slider to adjust the brightness level on the popped up window.
 
-Click the "Apply" button to make the changes take effect. The "OK" button can also make the changes take effect, and close the window.
+Click "Apply" to make the changes take effect. The "OK" button will apply and close the window.
 
 ### Button adjust
 
@@ -50,17 +54,25 @@ t.b.c.
 
 ### Aime
 
-Click the "Aime" button, and use arrow `↑` and `↓` to navigate to the target option.
+After clicking "Aime", use arrow `↑` and `↓` to navigate to the target option, and use arrow `←` or `→` to adjust the target value.
 
-Use arrow `←` or `→` to adjust the target value, finally apply the settings by pressing Enter.
+Apply the settings by pressing Enter.
 
 ### HID mode
 
-Click the "HID mode" button, and change the target mode using arrow `↑` and `↓`. Press Enter to apply.
+After clicking "HID mode" button, and change the target mode using arrow `↑` and `↓`. Press Enter to apply.
 
 ### Update
 
-Simply click the "Update firmware" button to update firmware. The program will exit.
+Just simply click the "Update firmware". The program will exit and the disk for placing the firmware will be appeared.
+
+## Special thanks
+
+- [Python](https://python.org)
+
+- [mai_pico](https://github.com/whowechina/mai_pico) by Whowechina.
+
+- [cvsjason](https://github.com/cvsjason) for touch port implementation.
 
 ## License
 
