@@ -138,10 +138,11 @@ class MainUI:
 
     def daemon_draw_text(self):
         while True:
-            if not self.stop_draw_text:
-                self.canvas_handler.set_text(draw.draw_text())
             if config_file["raw_readings_interval_time"] == 0:
                 self.stop_draw_text = 1
+            if not self.stop_draw_text:
+                tmp = draw.draw_text()
+                if not self.stop_draw_text: self.canvas_handler.set_text(tmp)
             time.sleep(config_file["raw_readings_interval_time"])
     
     def daemon_draw_touch(self):
