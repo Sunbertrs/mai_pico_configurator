@@ -121,7 +121,7 @@ def get_hid_off_mode_availability():
     with operating(cli_port, timeout=0.2) as port:
         port.write(b'hid\n')
         response = [i.decode().strip() for i in port.readlines()]
-    if "off" in response[0]:
+    if "off" in response[1]:
         return 1
     else:
         return 0
