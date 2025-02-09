@@ -73,6 +73,7 @@ message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
     "Reconfig": ("COM port reconfigured", "Port settings have reconfigured, please click the connect button again to try.\nIf the port is still incorrect, please manually correct it in config.yaml."),
     "Not_detected": ("Error", "Failed to connect to the port, make sure it is connected, and Powershell is not disabled."),
+    "Disconnected": ("Error", "Connection lost, please try again."),
     "Manual_port_repeat": ("Repeated value", "The value can't be the same."),
     "Manual_port_empty": ("Empty value", "The value can't be empty."),
     "Manual_port_illegal": ("Illegal value", "The value is illegal."),

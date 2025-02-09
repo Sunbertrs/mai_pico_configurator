@@ -57,7 +57,7 @@ class MainUI:
         # ---
         self.sensor_frame.grid(row=5, sticky="NSEW")
         self.display_area.grid_rowconfigure(5, weight=1)
-        self.sensor_canvas = Canvas(self.sensor_frame, width=canvas_size, height=canvas_size) # background='grey'
+        self.sensor_canvas = Canvas(self.sensor_frame, width=canvas_size, height=canvas_size)
         self.sensor_canvas.pack(anchor=S, expand=1)
         self.SENSOR_PIC = ImageTk.PhotoImage(Image.open("images/sensor.png").resize((canvas_size,)*2))
         self.sensor_canvas.create_image(canvas_size/2, canvas_size/2, image=self.SENSOR_PIC)
@@ -140,13 +140,24 @@ class MainUI:
                 self.stop_draw_text = 1
             if not self.stop_draw_text:
                 tmp = draw.draw_text()
+                if tmp == "Lost": break
                 if not self.stop_draw_text: self.canvas_handler.set_text(tmp)
             time.sleep(config_file["raw_readings_interval_time"])
     
     def daemon_draw_touch(self):
         while True:
             if not self.stop_draw_touch:
-                self.canvas_handler.set_touch(draw.draw_touch())
+                tmp = draw.draw_touch()
+                if tmp == "Lost": break
+                self.canvas_handler.set_touch(tmp)
+        self.disconnected_unexpectedly()
+
+    def disconnected_unexpectedly(self):
+        self.connect_btn['state'] = NORMAL
+        self.connect_stat_label['text'] = "Disconnected"
+        for i in self.cmd_btn: i['state'] = DISABLED
+        self.current_stat['text'] = connect_stat[0]
+        messagebox.showerror(*message_box_prompts["Disconnected"])
 
     def exiting(self):
         self.stop_draw_text = 1
