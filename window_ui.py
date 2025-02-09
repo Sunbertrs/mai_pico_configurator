@@ -73,12 +73,12 @@ class MainUI:
             self.root.protocol("WM_DELETE_WINDOW", self.exiting)
             self.connect_btn['state'] = DISABLED
             self.connect_stat_label['text'] = "Connected"
-            for i in self.cmd_btn: i['state'] = NORMAL
             self.current_stat['text'] = connect_stat[1]
             self.basic_info_label['text'] = get_hardware_basic_info()
             init_sensor_touch()
             Thread(target=self.daemon_draw_text, daemon=True).start()
             Thread(target=self.daemon_draw_touch, daemon=True).start()
+            for i in self.cmd_btn: i['state'] = NORMAL
             return
         elif len(stat) == 2 and "PermissionError" in str(stat[1]):
             messagebox.showerror(message_box_prompts["Denied"][0], message_box_prompts["Denied"][1]+"\n"+str(stat[1]))
