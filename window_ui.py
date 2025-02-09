@@ -122,7 +122,7 @@ class MainUI:
         self.current_stat['text'] = connect_stat[2] + name + "."
         self.stop_draw_text = 1
         self.root.bind("<KeyPress-Escape>", lambda _: self.done_command("esc"))
-        time.sleep(0.2)
+        time.sleep(0.1)
         exec(f"from {cmd} import main as _command_main\nThread(target=_command_main, args=(self,)).start()")
 
     def done_command(self, cmd):
@@ -141,7 +141,7 @@ class MainUI:
             if not self.stop_draw_text:
                 tmp = draw.draw_text()
                 if tmp == "Lost": break
-                if not self.stop_draw_text: self.canvas_handler.set_text(tmp)
+                elif not self.stop_draw_text: self.canvas_handler.set_text(tmp)
             time.sleep(config_file["raw_readings_interval_time"])
     
     def daemon_draw_touch(self):
