@@ -60,13 +60,14 @@ connect_stat = {
 }
 
 buttons = {
-    "Sensitivity adjust": 'cmds.sense',
+    "Sensitivity": 'cmds.sense',
     "LED brightness": 'cmds.level',
     # "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
     #"Test": 'cmds',
     "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
+    "Factory reset": 'cmds.factory',
 }
 
 message_box_prompts = {
@@ -79,7 +80,9 @@ message_box_prompts = {
     "Manual_port_illegal": ("Illegal value", "The value is illegal."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
     "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
-    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one.")
+    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one."),
+    "Factory_warning": ("Warning", "Are you sure to reset?All your settings will lost!\n(Including sensitivity, button reassignment, etc.)"),
+    "Factory_done": ("Notice", "The settings have reset to default now.")
 }
 
 CANVAS_FONT_SET = (
@@ -190,4 +193,11 @@ cmds_aime_text = (
     "Virtual AIC",
     "Protocol mode",
 	"Switch option: Arrow <Up> or <Down>\n\nAdjust: Arrow <Left> or <Right>\n\nApply: <Enter>",
+)
+
+cmds_gpio_text = (
+    "GPIO configuration",
+    "Main buttons",
+    "Aux buttons",
+    "Reset all"
 )

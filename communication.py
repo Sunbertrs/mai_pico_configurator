@@ -177,11 +177,16 @@ def get_brightness_level():
         port.write(b'display\n')
         response = [i.decode().strip() for i in port.readlines()]
         response = response[response.index("[RGB]")+3].replace("Level: ", "")
-        return response
+    return response
 
 def adjust_brightness_level(value):
     with operating(cli_port, timeout=0.2) as port:
         port.write(f'level {value}\n'.encode())
+        port.readlines()
+
+def factory_reset():
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'factory\n')
         port.readlines()
 
 # Thanks to @CVSJason(Github) for the reference on touch port communication implementation
