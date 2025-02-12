@@ -52,7 +52,7 @@ def get_hardware_basic_info():
     basic_info = basic_info + f"\nBrightness level: " + get_brightness_level()
     basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
     hid_stat = get_hid_mode()
-    basic_info = basic_info + f"\nHID mode: " + ("!!! Button is stuck, force using io4 now !!!" if hid_stat[-1] == "!" else hid_stat)
+    basic_info = basic_info + f"\nHID mode: " + (f"{hid_stat}(Button is stuck, force using io4)" if hid_stat[-1] == "!" else hid_stat)
     basic_info = basic_info + f"\nNFC module: " + get_aime_info()
 
     return basic_info
@@ -131,7 +131,7 @@ def get_hid_mode(ignore_stuck=None):
         port.write(b'display\n')
         response = [i.decode().strip() for i in port.readlines()]
         response = response[response.index("[HID]")+1:response.index("[HID]")+3]
-    if "Joy: on" in response or "IO4: on" in response[0]:
+    if "Joy: on" in response[0] or "IO4: on" in response[0]:
         stat = "io4"
     else:
         stat = response[0][response[0].index("key"):response[0].index("key")+4]
@@ -139,7 +139,19 @@ def get_hid_mode(ignore_stuck=None):
         stat += "!"
     return stat
 
+def get_naming_joy():
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[HID]")+1:response.index("[HID]")+2]
+        if "Joy" in response[0]:
+            return True
+        else:
+            return False
+
 def adjust_hid_mode(mode):
+    if mode == "io4" and get_naming_joy():
+        mode = "joy"
     with operating(cli_port, timeout=0.2) as port:
         port.write(f'hid {mode}\n'.encode())
         port.readlines()

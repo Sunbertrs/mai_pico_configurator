@@ -49,7 +49,7 @@ class MainUI:
         self.current_stat.grid(row=0, sticky="NW")
         self.basic_info_label = Label(self.basic_info_frame, text="SN: -")
         self.basic_info_label.grid(row=1, pady=10, sticky="NW")
-        self.basic_info_frame.grid_rowconfigure(1, minsize=150)
+        self.basic_info_frame.grid_rowconfigure(1, minsize=170)
 
         Separator(self.display_area, orient="horizontal").grid(row=4, sticky="WE")
 
@@ -122,7 +122,7 @@ class MainUI:
         self.current_stat['text'] = connect_stat[2] + name + "."
         self.stop_draw_text = 1
         self.root.bind("<KeyPress-Escape>", lambda _: self.done_command("esc"))
-        time.sleep(0.1)
+        time.sleep(0.18)
         exec(f"from {cmd} import main as _command_main\nThread(target=_command_main, args=(self,)).start()")
 
     def done_command(self, cmd):
