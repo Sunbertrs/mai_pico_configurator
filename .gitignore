@@ -1,3 +1,4 @@
-.fleet
-.idea
-cmds/__pycache__
+.fleet/
+.idea/
+__pycache__/
+cmds/__pycache__/
