@@ -48,9 +48,17 @@ Click the "LED brightness" button, and a window will pop up. Slide the slider to
 
 Click "Apply" to make the changes take effect. The "OK" button will apply and close the window.
 
-### Button adjust
+### Buttons adjust (GPIO definition)
 
-t.b.c.
+Click the "GPIO definition" button, and three option will appear.
+
+The **Main button** option can remap the sequence on your button ring if the <b>BT* pad</b> sequence that you solder the wire is not the same as the official one. <b>This function is only available in key* HID mode.</b>
+
+And, this **only** works if you solder a wire on BT* pad or the upstream pad. Or, you will need to type your definition by typing g, p.
+
+The **Aux button** option can remap the sequence of auxiliary button like Test, Service, Navigate, and Coin. You can only type the GP number in this option, for most people may don't use them.
+
+Moreover, there's no extended pads for Test and Coin on the official IO board v1.0. For the two aux buttons, you will need to solder the wire directly from the pads from Pico, and find a pad for ground. For this reason, this setting was designed like this.
 
 ### Aime
 

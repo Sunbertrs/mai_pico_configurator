@@ -134,7 +134,7 @@ def get_hid_mode(ignore_stuck=None):
     if "Joy: on" in response[0] or "IO4: on" in response[0]:
         stat = "io4"
     else:
-        stat = response[0][response[0].index("key"):response[0].index("key")+4]
+        stat = response[0][response[0].index("NKRO")+6:]
     if not ignore_stuck and response[1].startswith("!!!"):
         stat += "!"
     return stat
@@ -201,6 +201,34 @@ def factory_reset():
         port.write(b'factory\n')
         port.readlines()
 
+def get_gpio_info(aux=None):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'gpio\n')
+        response = [i.decode().strip() for i in port.readlines()]
+    if response[1] == "Unknown command.":
+        return "Unsupported"
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'display\n')
+        response = [i.decode().strip() for i in port.readlines()]
+        response = response[response.index("[GPIO]")+1:response.index("[GPIO]")+3]
+    if not aux:
+        response = response[0].split()
+    else:
+        response = response[1].split()
+    for i, j in enumerate(response):
+        response[i] = j[j.index(":")+1:]
+    return response
+
+def adjust_gpio_main_button(definition):
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(f'gpio main {definition}\n'.encode())
+        port.readlines()
+
+def gpio_reset():
+    with operating(cli_port, timeout=0.2) as port:
+        port.write(b'gpio reset\n')
+        port.readlines()
+
 # Thanks to @CVSJason(Github) for the reference on touch port communication implementation
 def init_sensor_touch():
     with operating(touch_port, timeout=0.2) as port:
@@ -251,4 +279,4 @@ def program_update():
 
 if __name__ == "__main__":
     create_connection()
-    print(get_brightness_level())
+    print(get_gpio(aux=0))

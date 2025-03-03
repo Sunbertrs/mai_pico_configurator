@@ -50,7 +50,9 @@ SENSOR_INFO = (
     "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
 )
 
-nkro_key = ("wedcxzaq", "89632147")
+NKRO_KEY = ("wedcxzaq", "89632147")
+
+GPIO_DEFAULT_DEFINITION = ("GP1", "GP0", "GP4", "GP5", "GP8", "GP9", "GP3", "GP2")
 
 connect_stat = {
     0: "Click the connect button to start.",
@@ -63,7 +65,7 @@ buttons = {
     "Sensitivity": 'cmds.sense',
     "LED brightness": 'cmds.level',
     "Aime": 'cmds.aime',
-    #"Test": 'cmds',
+    "GPIO definition": 'cmds.gpio',
     "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
     "Factory reset": 'cmds.factory',
@@ -79,7 +81,9 @@ message_box_prompts = {
     "Manual_port_illegal": ("Illegal value", "The value is illegal."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
     "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
-    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one."),
+    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer version."),
+    "Gpio_unsupported": ("Failed to configure GPIO", "The firmware you are using now does not support GPIO.\nPlease upgrade to a newer version."),
+    "Gpio_not_nkro": ("Error", "Unavailable to configure GPIO definition in io4 mode."),
     "Factory_warning": ("Warning", "Are you sure to reset?All your settings will lost!\n(Including sensitivity, button reassignment, etc.)"),
     "Factory_done": ("Notice", "The settings have reset to default now.")
 }
@@ -196,7 +200,19 @@ cmds_aime_text = (
 
 cmds_gpio_text = (
     "GPIO configuration",
+    "Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
     "Main buttons",
     "Aux buttons",
-    "Reset all"
+    "Reset all",
+    #---
+    "Press the button in the correct sequence now.\n\nBack: <Backspace>",
+    "Apply?",
+    "Yes: <Enter>\n\nNo: <Backspace>",
+    #---
+    "Test",
+    "Service",
+    "Square navigator",
+    "Coin",
+    #---
+    "Are you sure to reset GPIO setting?",
 )
