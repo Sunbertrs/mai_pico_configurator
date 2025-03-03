@@ -26,14 +26,15 @@ def main(instance):
 def select_option(settings, current):
     global aime_settings, prompt_image
     aime_settings = settings
-    image = prompt_image.copy()
+    image = prompt_image
     draw = ImageDraw.Draw(image)
     for i, j in enumerate(cmds_aime_text[1:3], start=1):
         draw.text((CMD_TITLE_POSITION[0],CMD_TITLE_POSITION[1]+SETTINGS_SPACING*i+50),
                   (f'{j:<20}' if i == 1 else f'{j:<17}') + f'{aime_settings[i-1]:>3}',
                   font=CANVAS_FONT_SET[2],
                   anchor="mm",
-                  fill="#E00" if current == i-1 else "#000")
+                  fill="#E00" if current == i-1 else "#000"
+        )
     image = image.resize((canvas_size,)*2)
     _inst.canvas_handler.set_text(image)
     if current == 0:

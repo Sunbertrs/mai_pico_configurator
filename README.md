@@ -38,13 +38,13 @@ Run command `py main.py` **in this project directory** to start this program, an
 
 ### Sensitivity adjust
 
-After clicking the "Sensitivity adjust", type the area you want to adjust using your keyboard, and adjust it using arrow `←` or `→`. Then apply the changes with Enter.
+Click the "Sensitivity" button, type the area you want to adjust using your keyboard, and adjust it using arrow `←` or `→`. Then apply the changes with Enter.
 
-You can turn back to the main screen by pressing Esc.
+You can turn back to the main screen by pressing `Esc`. This is also available to the following functions.
 
 ### LED brightness
 
-After clicking the "LED brightness", slide the slider to adjust the brightness level on the popped up window.
+Click the "LED brightness" button, and a window will pop up. Slide the slider to adjust the brightness level.
 
 Click "Apply" to make the changes take effect. The "OK" button will apply and close the window.
 
@@ -54,17 +54,21 @@ t.b.c.
 
 ### Aime
 
-After clicking "Aime", use arrow `↑` and `↓` to navigate to the target option, and use arrow `←` or `→` to adjust the target value.
+Click the "Aime" button, use arrow `↑` and `↓` to navigate option, and use arrow `←` or `→` to adjust the target value.
 
 Apply the settings by pressing Enter.
 
 ### HID mode
 
-After clicking "HID mode" button, and change the target mode using arrow `↑` and `↓`. Press Enter to apply.
+Click the "HID mode" button, and change the mode using arrow `↑` and `↓`.
+
+You must know the difference of these mode.
+
+Press Enter to apply.
 
 ### Update
 
-Just simply click the "Update firmware". The program will exit and the disk for placing the firmware will be appeared.
+Just simply click the "Update firmware". The program will exit and the disk for placing the firmware will appear.
 
 ## Special thanks
 

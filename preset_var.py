@@ -62,7 +62,6 @@ connect_stat = {
 buttons = {
     "Sensitivity": 'cmds.sense',
     "LED brightness": 'cmds.level',
-    # "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
     #"Test": 'cmds',
     "HID mode": 'cmds.hid',
@@ -95,7 +94,7 @@ CMD_TITLE_POSITION = (540,300)
 
 SETTINGS_SPACING = 85
 
-KEY_PROMPTING_POSITION = (130,800)
+KEY_PROMPTING_POSITION = (130,780)
 
 CANVAS_CENTER_POSITION = (540,540)
 

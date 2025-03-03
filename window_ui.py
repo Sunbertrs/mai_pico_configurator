@@ -49,7 +49,7 @@ class MainUI:
         self.current_stat.grid(row=0, sticky="NW")
         self.basic_info_label = Label(self.basic_info_frame, text="SN: -")
         self.basic_info_label.grid(row=1, pady=10, sticky="NW")
-        self.basic_info_frame.grid_rowconfigure(1, minsize=170)
+        self.basic_info_frame.grid_rowconfigure(1, minsize=180)
 
         Separator(self.display_area, orient="horizontal").grid(row=4, sticky="WE")
 
