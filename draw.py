@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 
-from preset_var import canvas_size, CANVAS_FONT_SET, SENSOR_INFO, config_file, area_title_position, area_subtitl_position
+from preset_var import canvas_size, CANVAS_FONT_SET, SENSOR_INFO, config_file, area_title_position, \
+    area_subtitl_position, CMD_TITLE_POSITION, KEY_PROMPTING_POSITION, SETTINGS_SPACING, CANVAS_CENTER_POSITION
 from communication import get_sensor_raw_readings, get_sensor_sense_adjust, combine_raw_and_sense_adjust, get_sensor_touch
 
 SHOW_SENSE_ADJUST = config_file["always_show_sense_adjust"]
@@ -45,3 +46,25 @@ def draw_touch():
         if area == 1:
             touch_images_list.append(AREA_ACT_CANVAS[i])
     return touch_images_list
+
+def draw_title_and_prompting_keys(draw, title_text, prompt_text, center=None):
+    if not center:
+        draw.text(CMD_TITLE_POSITION, title_text, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    else:
+        draw.text(CANVAS_CENTER_POSITION, title_text, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw.text(KEY_PROMPTING_POSITION, prompt_text, font=CANVAS_FONT_SET[1], fill="#000")
+    return
+
+def draw_selecting_options(draw, option_index, option_name, is_current):
+    draw.text((CMD_TITLE_POSITION[0], CMD_TITLE_POSITION[1] + SETTINGS_SPACING * option_index + 50),
+              option_name,
+              font=CANVAS_FONT_SET[2],
+              anchor="mm",
+              fill="#E00" if is_current else "#000"
+    )
+    return
+
+def resize_and_display(_inst, image):
+    if canvas_size != 1080:
+        image = image.resize((500, 500))
+    _inst.canvas_handler.set_text(image)

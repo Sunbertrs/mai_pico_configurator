@@ -2,11 +2,11 @@ import sys
 sys.path.insert(0, sys.path[0].replace("cmds",""))
 from PIL import Image, ImageDraw
 
-from preset_var import canvas_size, CANVAS_FONT_SET, SENSOR_INFO, cmds_sense_text, KEY_PROMPTING_POSITION, CANVAS_CENTER_POSITION, CMD_TITLE_POSITION
+from draw import draw_title_and_prompting_keys, resize_and_display
+from preset_var import CANVAS_FONT_SET, SENSOR_INFO, cmds_sense_text
 from communication import get_sensor_sense_adjust, adjust_sense_reset, adjust_sense
 
 SENSE_ADJUST_POSITION = (540,620)
-CMD_TITLE_POSITION = (CMD_TITLE_POSITION[0], CMD_TITLE_POSITION[1]+50)
 
 def main(instance):
     global _inst
@@ -14,11 +14,8 @@ def main(instance):
 
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
-    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[1], font=CANVAS_FONT_SET[1], fill="#000")
-    
-    prompt_image = prompt_image.resize((canvas_size,)*2)
-    _inst.canvas_handler.set_text(prompt_image)
+    draw_title_and_prompting_keys(draw, cmds_sense_text[0], cmds_sense_text[1])
+    resize_and_display(_inst, prompt_image)
 
     for i in "ABCDEabcde":
         _inst.root.bind(f'<KeyPress-{i}>', select_number)
@@ -32,11 +29,10 @@ def select_number(event):
     
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
-    draw.text(CANVAS_CENTER_POSITION, pressed_key, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+    draw_title_and_prompting_keys(draw, cmds_sense_text[0], "")
+    draw_title_and_prompting_keys(draw, pressed_key, "", center=1)
     
-    prompt_image = prompt_image.resize((canvas_size,)*2)
-    _inst.canvas_handler.set_text(prompt_image)
+    resize_and_display(_inst, prompt_image)
 
     for i in "12345678":
         if pressed_key == "C" and i == "3": break
@@ -51,12 +47,11 @@ def sensitivity_adjust(selected_area):
     draw = ImageDraw.Draw(prompt_image)
 
     if selected_area != "g":
-        draw.text(CANVAS_CENTER_POSITION, selected_area, font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+        draw_title_and_prompting_keys(draw, selected_area, "", center=1)
     else:
-        draw.text(CANVAS_CENTER_POSITION, "Global", font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
+        draw_title_and_prompting_keys(draw, cmds_sense_text[3], "", center=1)
 
-    draw.text(CMD_TITLE_POSITION, cmds_sense_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
-    draw.text(KEY_PROMPTING_POSITION, cmds_sense_text[2], font=CANVAS_FONT_SET[1], fill="#000")
+    draw_title_and_prompting_keys(draw, cmds_sense_text[0], cmds_sense_text[2])
 
     prompt_image_edited = prompt_image.copy()
     draw = ImageDraw.Draw(prompt_image_edited)
@@ -65,8 +60,7 @@ def sensitivity_adjust(selected_area):
 
     draw.text(SENSE_ADJUST_POSITION, adjusts_value, font=CANVAS_FONT_SET[2], anchor="mm", fill="#E00")
 
-    prompt_image_edited = prompt_image_edited.resize((canvas_size,)*2)
-    _inst.canvas_handler.set_text(prompt_image_edited)
+    resize_and_display(_inst, prompt_image_edited)
     
     _inst.root.bind("<KeyPress-BackSpace>", lambda _: main(_inst))
     _inst.root.bind("<KeyPress-Left>", lambda _: sensitivity_adjusting(prompt_image, selected_area, "-", int(adjusts_value)))
@@ -82,8 +76,7 @@ def sensitivity_adjusting(image, area, stat, value:int):
 
     draw.text(SENSE_ADJUST_POSITION, f"{value:+}" if value != 0 else "0", font=CANVAS_FONT_SET[2], anchor="mm", fill="#E00")
 
-    prompt_image = prompt_image.resize((canvas_size,)*2)
-    _inst.canvas_handler.set_text(prompt_image)
+    resize_and_display(_inst, prompt_image)
     
     _inst.root.bind("<KeyPress-Left>", lambda _: sensitivity_adjusting(image, area, "-", value))
     _inst.root.bind("<KeyPress-Right>", lambda _: sensitivity_adjusting(image, area, "+", value))

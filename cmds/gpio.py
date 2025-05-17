@@ -2,10 +2,8 @@ from PIL import Image, ImageDraw
 from tkinter import messagebox
 
 from communication import get_gpio_info, get_hid_mode, adjust_gpio_main_button, gpio_reset
-from preset_var import CMD_TITLE_POSITION, cmds_gpio_text, CANVAS_FONT_SET, message_box_prompts, KEY_PROMPTING_POSITION, \
-    area_title_position, SETTINGS_SPACING, canvas_size, area_subtitl_position, GPIO_DEFAULT_DEFINITION, NKRO_KEY, \
-    CANVAS_CENTER_POSITION
-
+from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
+from preset_var import cmds_gpio_text, CANVAS_FONT_SET, message_box_prompts, KEY_PROMPTING_POSITION, area_title_position, area_subtitl_position, GPIO_DEFAULT_DEFINITION, NKRO_KEY, CANVAS_CENTER_POSITION
 
 def main(instance):
     global _inst
@@ -17,7 +15,6 @@ def main(instance):
         _inst.done_command("esc")
         return
     elif not get_hid_mode(ignore_stuck=1).startswith("key"):
-        print(get_hid_mode())
         messagebox.showerror(*message_box_prompts["Gpio_not_nkro"])
         _inst.done_command("esc")
         return
@@ -27,17 +24,10 @@ def selecting(current):
     global prompt_image
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CMD_TITLE_POSITION, cmds_gpio_text[0], font=CANVAS_FONT_SET[0], anchor="mm", fill="#000")
-    draw.text(KEY_PROMPTING_POSITION, cmds_gpio_text[1], font=CANVAS_FONT_SET[1], fill="#000")
+    draw_title_and_prompting_keys(draw, cmds_gpio_text[0], cmds_gpio_text[1])
     for i, j in enumerate(cmds_gpio_text[2:5], start=1):
-        draw.text((CMD_TITLE_POSITION[0],CMD_TITLE_POSITION[1]+SETTINGS_SPACING*i+50),
-                  j,
-                  font=CANVAS_FONT_SET[2],
-                  anchor="mm",
-                  fill="#E00" if current == i-1 else "#000"
-        )
-    image = prompt_image.resize((canvas_size,) * 2)
-    _inst.canvas_handler.set_text(image)
+        draw_selecting_options(draw, i, j, (current==i-1))
+    resize_and_display(_inst, prompt_image)
     if current == 0:
         _inst.root.bind("<KeyPress-Down>", lambda _: selecting(1))
     elif current == 1:
@@ -85,8 +75,7 @@ def edit_main_button(detected_value, current, key_position):
         confirm_main_button(image, key_position)
     else:
         draw.text(KEY_PROMPTING_POSITION, cmds_gpio_text[5], fill="#000", font=CANVAS_FONT_SET[1])
-    image = image.resize((canvas_size,) * 2)
-    _inst.canvas_handler.set_text(image)
+    resize_and_display(_inst, image)
 
 def confirm_main_button(image, key_position):
     for i in NKRO_KEY[int(key_position) - 1]:
@@ -94,8 +83,7 @@ def confirm_main_button(image, key_position):
     _inst.root.bind("<KeyPress-Return>", lambda _: apply_main_button())
     _inst.root.bind("<KeyPress-BackSpace>", lambda _:display_main_button())
     draw = ImageDraw.Draw(image)
-    draw.text(CANVAS_CENTER_POSITION, cmds_gpio_text[6], fill="#000", font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_gpio_text[7], fill="#000", font=CANVAS_FONT_SET[1])
+    draw_title_and_prompting_keys(draw, cmds_gpio_text[6], cmds_gpio_text[7], center=1)
 
 def apply_main_button():
     if gpio_definition != get_gpio_info():
@@ -110,10 +98,8 @@ def edit_aux_button():
 def confirm_reset_gpio():
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw.text(CANVAS_CENTER_POSITION, cmds_gpio_text[12], fill="#000", font=CANVAS_FONT_SET[0], anchor="mm")
-    draw.text(KEY_PROMPTING_POSITION, cmds_gpio_text[7], fill="#000", font=CANVAS_FONT_SET[1])
-    prompt_image = prompt_image.resize((canvas_size,)*2)
-    _inst.canvas_handler.set_text(prompt_image)
+    draw_title_and_prompting_keys(draw, cmds_gpio_text[12], cmds_gpio_text[7], center=1)
+    resize_and_display(_inst, prompt_image)
     _inst.root.bind("<KeyPress-BackSpace>", lambda _: selecting(0))
     _inst.root.bind("<KeyPress-Return>", lambda _: reset_gpio())
 

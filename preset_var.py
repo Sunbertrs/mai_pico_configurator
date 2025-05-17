@@ -180,6 +180,7 @@ cmds_sense_text = (
     "Sensitivity configuration",
 	"Type the area using your keyboard.\n\nPress 'g' for global sensitivity.",
 	"Adjusting: Arrow <Left> or <Right>\n\nBack: <Backspace>\n\nApply: <Enter>",
+    "Global"
 )
 
 cmds_hid_text = (
