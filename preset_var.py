@@ -54,6 +54,12 @@ NKRO_KEY = ("wedcxzaq", "89632147")
 
 GPIO_DEFAULT_DEFINITION = ("GP1", "GP0", "GP4", "GP5", "GP8", "GP9", "GP3", "GP2")
 
+button_stat = (
+    "Connect",
+    "Disconnected",
+    "Connected"
+)
+
 connect_stat = {
     0: "Click the connect button to start.",
     1: "Program is running normally.",
@@ -175,6 +181,14 @@ area_subtitl_position = {
     "E7": (210,550),
     "E8": (300,330)
 }
+
+setting_port_manually_text = (
+    "Setting the COM ports",
+    "Please specify the serial ports manually.",
+    "Command line:",
+    "Touch:",
+
+)
 
 cmds_sense_text = (
     "Sensitivity configuration",

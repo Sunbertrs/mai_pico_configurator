@@ -10,7 +10,8 @@ import time
 if os.name != "nt":
     import glob
 
-from preset_var import connect_stat, message_box_prompts, canvas_size, get_com_list, config_file, buttons
+from preset_var import connect_stat, message_box_prompts, canvas_size, get_com_list, config_file, buttons, button_stat, \
+    setting_port_manually_text
 from communication import check_connect, create_connection, get_hardware_basic_info, init_sensor_touch, stop_get_touch_info
 import draw
 
@@ -27,9 +28,9 @@ class MainUI:
         self.connect_frame = Frame(self.display_area)
         # ---
         self.connect_frame.grid(row=0, sticky="W", padx=10, pady=10)
-        self.connect_btn = Button(self.connect_frame, text="Connect", command=lambda:Thread(target=self.click_start_connect).start())
+        self.connect_btn = Button(self.connect_frame, text=button_stat[0], command=lambda:Thread(target=self.click_start_connect).start())
         self.connect_btn.grid(row=0, column=0, sticky="W")
-        self.connect_stat_label = Label(self.connect_frame, text="Disconnected")
+        self.connect_stat_label = Label(self.connect_frame, text=button_stat[1])
         self.connect_stat_label.grid(row=0, column=1, padx=10, sticky="W")
         self.cmd_list = Frame(self.display_area)
         # ---
@@ -66,13 +67,15 @@ class MainUI:
         self.stop_draw_text = 0
         self.stop_draw_touch = 0
 
+        self.manual_select_port_is_opened = 0
+
     def click_start_connect(self):
         stat = check_connect()
         if stat == (1,):
             create_connection()
             self.root.protocol("WM_DELETE_WINDOW", self.exiting)
             self.connect_btn['state'] = DISABLED
-            self.connect_stat_label['text'] = "Connected"
+            self.connect_stat_label['text'] = button_stat[2]
             self.current_stat['text'] = connect_stat[1]
             self.basic_info_label['text'] = get_hardware_basic_info()
             init_sensor_touch()
@@ -154,7 +157,7 @@ class MainUI:
 
     def disconnected_unexpectedly(self):
         self.connect_btn['state'] = NORMAL
-        self.connect_stat_label['text'] = "Disconnected"
+        self.connect_stat_label['text'] = button_stat[1]
         for i in self.cmd_btn: i['state'] = DISABLED
         self.current_stat['text'] = connect_stat[0]
         messagebox.showerror(*message_box_prompts["Disconnected"])
@@ -197,16 +200,16 @@ class CanvasHandler:
 class ManualSelectPort:
     def __init__(self, root):
         self.root = root
-        self.root.title("Setting the COM ports")
-        self.root.geometry("380x250")
+        self.root.title(setting_port_manually_text[0])
+        self.root.geometry("400x250")
         root.resizable(False, False)
 
-        self.hint = Label(self.root, text="Specify the serial ports manually.")
+        self.hint = Label(self.root, text=setting_port_manually_text[1])
         self.hint.grid(row=0, column=0, columnspan=2, padx=15, pady=15, sticky="W")
 
         self.select_list = [
-            [Label(self.root, text="Command line:"), Combobox(self.root)],
-            [Label(self.root, text="Touch:"), Combobox(self.root)]
+            [Label(self.root, text=setting_port_manually_text[2]), Combobox(self.root)],
+            [Label(self.root, text=setting_port_manually_text[3]), Combobox(self.root)]
         ]
 
         self.select_list[0][1]['values'] = self.select_list[1][1]['values'] = [f'COM{i+1}' for i in range(255)] if os.name == 'nt' else [i for i in glob.glob('/dev/tty*')]
