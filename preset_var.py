@@ -3,7 +3,7 @@ import screeninfo
 import yaml
 import subprocess
 
-no_device_debug = False
+# no_device_debug = False
 
 with open("config.yaml") as f:
     config_file = yaml.safe_load(f)

@@ -149,7 +149,7 @@ class TouchDevice:
         # self.controller.mainloop()
         pass
 
-class Operating:
+class Using:
     def __init__(self, port, timeout=None):
         self.port = port
 
