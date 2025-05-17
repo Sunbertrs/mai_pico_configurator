@@ -98,8 +98,13 @@ class MainUI:
             self.manual_config()
 
     def manual_config(self):
-        ManualSelectPort(Toplevel())
-        return
+        if not self.manual_select_port_is_opened:
+            self.manual_select_port_is_opened = 1
+            self.select_port_window = ManualSelectPort(Toplevel())
+        else:
+            self.select_port_window.root.destroy()
+            self.manual_select_port_is_opened = 0
+            self.manual_config()
 
     def try_auto_config(self):
         get_com_list()
@@ -130,6 +135,7 @@ class MainUI:
 
     def done_command(self, cmd):
         self.root.unbind("<KeyPress-Escape>")
+        self.root.unbind("<KeyPress-Backspace>")
         self.current_stat['text'] = connect_stat[1]
         if cmd == "esc":
             self.stop_draw_text = 0
