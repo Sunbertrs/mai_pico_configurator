@@ -28,15 +28,12 @@ def check_connect():
 class using:
     def __init__(self, port):
         self.port = port
-        self.init_time = time.time()
     def __enter__(self):
         try:
             self.serial = serial.Serial(self.port, timeout=0.2)
         except Exception:
-            time.sleep(0.15)
             self.__enter__()
             pass
-        self.returnable_time = time.time()
         return self.serial
     def __exit__(self, *args):
         if self.serial and self.serial.is_open:
