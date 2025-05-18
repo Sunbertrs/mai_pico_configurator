@@ -86,7 +86,7 @@ class MainUI:
         elif len(stat) == 2 and "PermissionError" in str(stat[1]):
             messagebox.showerror(message_box_prompts["Denied"][0], message_box_prompts["Denied"][1]+"\n"+str(stat[1]))
             return
-        elif (stat == ('not_set',) or "FileNotFoundError" in str(stat[1])) and os.name == 'nt':
+        elif (stat == ('Not_set',) or "FileNotFoundError" in str(stat[1])) and os.name == 'nt':
             if config_file["auto_port_config"]:
                 self.try_auto_config()
             else:

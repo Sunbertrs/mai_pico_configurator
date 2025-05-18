@@ -1,3 +1,4 @@
+import time
 import serial
 import yaml
 import re
@@ -7,16 +8,15 @@ from preset_var import sensor_area
 def check_connect():
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
-    if config['cli_port'] == config['touch_port'] == '':
+    if '' in (config['cli_port'], config['touch_port']):
         return ('Not_set',)
     # if no_device_debug:
     #     print("No device debug mode is enabled.")
     #     return (1,)
-
     try:
         cli = serial.Serial(config['cli_port'])
         touch = serial.Serial(config['touch_port'])
-    except serial.serialutil.SerialException as e:
+    except Exception as e:
         stat =  (0, e)
     else:
         cli.close()
@@ -32,6 +32,7 @@ class using:
         try:
             self.serial = serial.Serial(self.port, timeout=0.2)
         except Exception:
+            time.sleep(0.18)
             self.__enter__()
             pass
         return self.serial
