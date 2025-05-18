@@ -18,15 +18,22 @@ The project is still under development, the stable version will be released soon
 
 ## Introduction
 
-The project provides a configuration GUI for the project [mai_pico](https://github.com/whowechina/mai_pico).
+The project provides a simple configuration GUI for the project [mai_pico](https://github.com/whowechina/mai_pico).
 
 Mainly relies on communicating with the CLI serial port, and parsing the response text from CLI serial port.
 
-For the first time use, you need to ensure that you have installed the Python which version is larger than 3.8, and run `pip install -r requirements.txt` in this project directory.
-
 Run command `py main.py` **in this project directory** to start this program, and click `Connect` button to connect to your device and use.
 
-### Features
+| Running environment |                                                 |
+|---------------------|-------------------------------------------------|
+| CPU                 | Intel Core i7-1165G7                            |
+| Memory              | 16GB                                            |
+| Screen resolution   | 1920x1080                                       |
+| Operating system    | Windows 10                                      |
+| Python version      | 3.12                                            |
+| The using packages  | Why don't run `pip install -r requirements.txt` |
+
+## Features
 
 - It is possible to run on non Windows platforms.
 
@@ -40,7 +47,7 @@ Run command `py main.py` **in this project directory** to start this program, an
 
 Click the "Sensitivity" button, type the area you want to adjust using your keyboard, and adjust it using arrow `←` or `→`. Then apply the changes with Enter.
 
-You can turn back to the main screen by pressing `Esc`. This is also available to the following functions.
+You can turn back to the main screen by pressing `Esc`. This is also available to use in the following functions.
 
 ### LED brightness
 
@@ -54,11 +61,11 @@ Click the "GPIO definition" button, and three option will appear.
 
 The **Main button** option can remap the sequence on your button ring if the <b>BT* pad</b> sequence that you solder the wire is not the same as the official one. <b>This function is only available in key* HID mode.</b>
 
-And, this **only** works if you solder a wire on BT* pad or the upstream pad. Or, you will need to type your definition by typing g, p.
+And, this **only** works if you solder a wire on BT* pad or the upstream pad. Or, you will need to type your definition by pressing `Insert`.
 
-The **Aux button** option can remap the sequence of auxiliary button like Test, Service, Navigate, and Coin. You can only type the GP number in this option, for most people may don't use them.
+The **Aux button** option can remap the sequence of auxiliary button like Test, Service, Navigate, and Coin. In this option, you can only type the GP number, for most people may don't use them.
 
-Moreover, there's no extended pads for Test and Coin on the official IO board v1.0. For the two aux buttons, you will need to solder the wire directly from the pads from Pico, and find a pad for ground. For this reason, this setting was designed like this.
+Moreover, there's no extended pads for Test and Coin on the official IO board v1.0. For the two aux buttons, you will need to solder the wire directly from the pads from Pico, and find a pad for ground. Due to this reason, the function was designed like this.
 
 ### Aime
 
@@ -84,7 +91,7 @@ Just simply click the "Update firmware". The program will exit and the disk for 
 
 - [mai_pico](https://github.com/whowechina/mai_pico) by Whowechina.
 
-- [cvsjason](https://github.com/cvsjason) for touch port implementation.
+- [cvsjason](https://github.com/cvsjason) for touch port communication implementation.
 
 ## License
 
