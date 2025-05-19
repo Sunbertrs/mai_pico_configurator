@@ -54,6 +54,8 @@ NKRO_KEY = ("wedcxzaq", "89632147")
 
 GPIO_DEFAULT_DEFINITION = ("GP1", "GP0", "GP4", "GP5", "GP8", "GP9", "GP3", "GP2")
 
+GPIO_AUX_SEQUENCE = ("test", "service", "navigate", "coin")
+
 button_stat = (
     "Connect",
     "Disconnected",
