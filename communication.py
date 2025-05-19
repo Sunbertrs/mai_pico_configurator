@@ -64,7 +64,7 @@ def get_hardware_basic_info():
     basic_info = basic_info + f"\nBrightness level: " + get_brightness_level()
     basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
     hid_stat = get_hid_mode()
-    basic_info = basic_info + f"\nHID mode: " + (f"{hid_stat}(Button is stuck, force using io4)" if hid_stat[-1] == "!" else hid_stat)
+    basic_info = basic_info + f"\nHID mode: {hid_stat}" + ("(Button is stuck, force using io4)" if hid_stat[-1] == "!" else "")
     basic_info = basic_info + f"\nNFC module: " + get_aime_info()
 
     return basic_info
@@ -143,7 +143,7 @@ def get_hid_mode(ignore_stuck=None):
         port.write(b'display\n')
         response = [i.decode().strip() for i in port.readlines()]
         response = response[response.index("[HID]")+1:response.index("[HID]")+3]
-    if "Joy: on" in response[0] or "IO4: on" in response[0]:
+    if "joy: on" in response[0].lower() or "io4: on" in response[0].lower():
         stat = "io4"
     else:
         stat = response[0][response[0].index("NKRO")+6:]
