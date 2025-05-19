@@ -162,7 +162,7 @@ def apply_buttons(type):
 def confirm_reset_gpio():
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_gpio_text[12], cmds_gpio_text[7], center=1)
+    draw_title_and_prompting_keys(draw, cmds_gpio_text[13], cmds_gpio_text[7], center=1)
     resize_and_display(_inst, prompt_image)
     _inst.root.bind("<KeyPress-Return>", lambda _: reset_gpio())
 

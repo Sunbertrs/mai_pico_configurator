@@ -222,14 +222,15 @@ cmds_gpio_text = (
     "Aux buttons",
     "Reset all",
     #---
-    "Press the button in the correct sequence now.\n\nBack: <Backspace>",
+    "Press the button in the correct sequence now.\n\nManual: <Insert>, Finish typing: <End>\n\nBack: <Backspace>",
     "Apply?",
     "Yes: <Enter>\n\nNo: <Backspace>",
     #---
     "Test",
     "Service",
-    "Square navigator",
+    "Triangle key",
     "Coin",
+    "Switch option: Arrow <Up> or <Down>\n\nInput: Just type it\n\nApply: <Enter>",
     #---
     "Are you sure to reset GPIO setting?",
 )
