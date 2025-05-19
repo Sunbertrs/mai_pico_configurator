@@ -76,30 +76,31 @@ def edit_main_buttons(detected_value, current, key_position):
     image = prompt_image.copy()
     draw = ImageDraw.Draw(image)
 
-    if detected_value.startswith("Insert") and len(detected_value) < 10: current = current - 1
+    if detected_value.startswith("Insert") and len(detected_value) < 10 or len(detected_value) == 10 and int(detected_value[-2:]) > 28: current = current - 1
     for i, j in zip(subtitl_display_position, enumerate(gpio_definition)):
         draw.text(i, j[1], font=CANVAS_FONT_SET[1], fill="#E00" if current == j[0] else "#000")
-    if detected_value.startswith("Insert") and len(detected_value) < 10: current = current + 1
+    if detected_value.startswith("Insert") and len(detected_value) < 10 or len(detected_value) == 10 and int(detected_value[-2:]) > 28: current = current + 1
 
     for i in NKRO_KEY[int(key_position)-1]:
-        _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_button(a.keysym, current+1, key_position))
-    _inst.root.bind('<KeyPress-Insert>', lambda a: edit_main_button("InsertGP", current+1, key_position))
         _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_buttons(a.keysym, current+1, key_position))
     _inst.root.bind('<KeyPress-Insert>', lambda a: edit_main_buttons("InsertGP", current+1, key_position))
+    _inst.root.unbind('<KeyPress-End>')
 
     if detected_value.startswith("Insert"):
         _inst.root.unbind('<KeyPress-Insert>')
         for i in NKRO_KEY[int(key_position)-1]:
             _inst.root.unbind(f'<KeyPress-{i}>')
-        if len(detected_value) < 10:
-            for i in range(10):
-                _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_button(detected_value + a.keysym, current, key_position))
-        elif len(detected_value) == 10 and int(detected_value[-2:]) <= 28 and gpio_definition[current] != gpio_definition[current-1]:
-            for i in range(10):
-                _inst.root.unbind(f'<KeyPress-{i}>')
-            edit_main_button("Reset", current+1, key_position)
-        elif len(detected_value) >= 10 and int(detected_value[-2:]) > 28:
-            edit_main_button("InsertGP", current, key_position)
+        for i in range(10):
+            _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_buttons(detected_value + a.keysym, current, key_position))
+        _inst.root.bind(f'<KeyPress-End>', lambda a: edit_main_buttons("Reset", current+1, key_position))
+
+        if detected_value.replace("InsertGP", "") != "":
+            if 10 <= int(detected_value.replace("InsertGP", "")) <= 28:
+                for i in range(10):
+                    _inst.root.unbind(f'<KeyPress-{i}>')
+                edit_main_buttons("Reset", current+1, key_position)
+            elif int(detected_value.replace("InsertGP", "")) > 28:
+                edit_main_buttons("InsertGP", current, key_position)
 
     if current == 8:
         confirm_main_buttons(image, key_position)
