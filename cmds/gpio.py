@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 from tkinter import messagebox
 
-from communication import get_gpio_info, get_hid_mode, adjust_gpio_main_button, gpio_reset
+from communication import get_gpio_info, get_hid_mode, gpio_reset, adjust_gpio_buttons
 from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
 from preset_var import cmds_gpio_text, CANVAS_FONT_SET, message_box_prompts, area_title_position, area_subtitl_position, GPIO_DEFAULT_DEFINITION, NKRO_KEY
 
@@ -39,18 +39,21 @@ def selecting(current):
 
 def function_index(index):
     global gpio_definition
+    _inst.root.unbind("<KeyPress-Up>")
+    _inst.root.unbind("<KeyPress-Down>")
+    _inst.root.unbind("<KeyPress-Return>")
+    _inst.root.bind("<KeyPress-BackSpace>", lambda _: selecting(index))
     if index == 0:
         gpio_definition = get_gpio_info()
-        display_main_button()
+        display_main_buttons()
     elif index == 1:
         gpio_definition = get_gpio_info(aux=1)
         edit_aux_button()
     else:
         confirm_reset_gpio()
 
-def display_main_button():
+def display_main_buttons():
     global prompt_image
-    _inst.root.unbind("<KeyPress-Down>")
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
     title_display_position = [i[1] for i in area_title_position.items() if i[0].startswith("A")]
@@ -58,10 +61,9 @@ def display_main_button():
     subtitl_display_position = [i[1] for i in area_subtitl_position.items() if i[0].startswith("A")]
     for i, j in enumerate(title_display_position, start=1):
         draw.text(j, str(i), font=CANVAS_FONT_SET[0], fill="#000")
-    _inst.root.bind("<KeyPress-BackSpace>", lambda _:selecting(0))
-    edit_main_button("", 0, get_hid_mode(ignore_stuck=1)[-1])
+    edit_main_buttons("", 0, get_hid_mode(ignore_stuck=1)[-1])
 
-def edit_main_button(detected_value, current, key_position):
+def edit_main_buttons(detected_value, current, key_position):
     global gpio_definition
     if not detected_value.startswith("Insert"):
         if detected_value == "Reset":
@@ -81,6 +83,8 @@ def edit_main_button(detected_value, current, key_position):
     for i in NKRO_KEY[int(key_position)-1]:
         _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_button(a.keysym, current+1, key_position))
     _inst.root.bind('<KeyPress-Insert>', lambda a: edit_main_button("InsertGP", current+1, key_position))
+        _inst.root.bind(f'<KeyPress-{i}>', lambda a: edit_main_buttons(a.keysym, current+1, key_position))
+    _inst.root.bind('<KeyPress-Insert>', lambda a: edit_main_buttons("InsertGP", current+1, key_position))
 
     if detected_value.startswith("Insert"):
         _inst.root.unbind('<KeyPress-Insert>')
@@ -97,16 +101,16 @@ def edit_main_button(detected_value, current, key_position):
             edit_main_button("InsertGP", current, key_position)
 
     if current == 8:
-        confirm_main_button(image, key_position)
+        confirm_main_buttons(image, key_position)
     else:
         draw_title_and_prompting_keys(draw, "", cmds_gpio_text[5])
     resize_and_display(_inst, image)
 
-def confirm_main_button(image, key_position):
+def confirm_main_buttons(image, key_position):
     for i in NKRO_KEY[int(key_position) - 1]:
         _inst.root.unbind(f'<KeyPress-{i}>')
-    _inst.root.bind("<KeyPress-Return>", lambda _: apply_main_button())
-    _inst.root.bind("<KeyPress-BackSpace>", lambda _:display_main_button())
+    _inst.root.bind("<KeyPress-Return>", lambda _: apply_buttons("main"))
+    _inst.root.bind("<KeyPress-BackSpace>", lambda _:display_main_buttons())
     draw = ImageDraw.Draw(image)
     draw_title_and_prompting_keys(draw, cmds_gpio_text[6], cmds_gpio_text[7], center=1)
 
@@ -115,6 +119,16 @@ def apply_main_button():
         definition = " ".join(gpio_definition)
         definition = definition.replace("GP", "")
         adjust_gpio_main_button(definition)
+def apply_buttons(type):
+    if type == "main" and gpio_definition != get_gpio_info():
+        definition = " ".join(gpio_definition).replace("GP", "")
+        adjust_gpio_buttons("main", definition)
+    elif type == "aux":
+        old_definition = get_gpio_info(aux=1)
+        for i, j in enumerate(gpio_definition):
+            if j != old_definition[i]:
+                adjust_gpio_buttons("aux", f"{GPIO_AUX_SEQUENCE[i]} {j.replace('GP', '')}")
+                print(f"{GPIO_AUX_SEQUENCE[i]} {j}")
     _inst.done_command("esc")
 
 def edit_aux_button():
@@ -125,7 +139,6 @@ def confirm_reset_gpio():
     draw = ImageDraw.Draw(prompt_image)
     draw_title_and_prompting_keys(draw, cmds_gpio_text[12], cmds_gpio_text[7], center=1)
     resize_and_display(_inst, prompt_image)
-    _inst.root.bind("<KeyPress-BackSpace>", lambda _: selecting(0))
     _inst.root.bind("<KeyPress-Return>", lambda _: reset_gpio())
 
 def reset_gpio():

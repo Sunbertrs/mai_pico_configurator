@@ -231,10 +231,12 @@ def get_gpio_info(aux=None):
         response[i] = j[j.index(":")+1:]
     return response
 
-def adjust_gpio_main_button(definition):
+def adjust_gpio_buttons(type, definition):
     with using(cli_port) as port:
-        port.write(f'gpio main {definition}\n'.encode())
-        port.readlines()
+        if type == "main":
+            port.write(f'gpio main {definition}\n'.encode())
+        elif type == "aux":
+            port.write(f'gpio {definition}\n'.encode())
 
 def gpio_reset():
     with using(cli_port) as port:
