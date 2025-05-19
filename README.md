@@ -8,13 +8,11 @@ This is a visualize configurator for [mai_pico](https://github.com/whowechina/ma
 
 ## To-do
 
-- Support for non Windows platforms.
+- Better support for non Windows platforms.
 
-- Add more functions.
+- Add more features.
 
-Any suggestions for new features, bug report ~~or pull requests~~ are welcome.
-
-The project is still under development, the stable version will be released soon. Stay tuned!
+Any suggestions for new features, bug report or pull requests are welcome.
 
 ## Introduction
 
