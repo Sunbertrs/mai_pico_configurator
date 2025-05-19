@@ -19,13 +19,13 @@ def main(instance):
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
     draw_title_and_prompting_keys(draw, cmds_aime_text[0], cmds_aime_text[3])
-    draw.text((540,640), f"NFC module - {status}", font=CANVAS_FONT_SET[2], anchor="mm", fill="#000")
+    draw_selecting_options(draw, 4, f"NFC module - {status}", 0)
     select_option(list(get_aime_info(more=1)), 0)
 
 def select_option(settings, current):
     global aime_settings, prompt_image
     aime_settings = settings
-    image = prompt_image
+    image = prompt_image.copy()
     draw = ImageDraw.Draw(image)
     for i, j in enumerate(cmds_aime_text[1:3], start=1):
         draw_selecting_options(draw, i, f'{j:<17}{aime_settings[i-1]:>3}', (current == i - 1))
