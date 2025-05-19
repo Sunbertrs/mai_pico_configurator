@@ -97,16 +97,16 @@ message_box_prompts = {
 }
 
 CANVAS_FONT_SET = (
-    ImageFont.truetype("fonts/NotoSans.ttf", 53),
-    ImageFont.truetype("fonts/NotoSans.ttf", 30),
-    ImageFont.truetype("fonts/NotoSans.ttf", 41)
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 53),
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 30),
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 41)
 )
 
 CMD_TITLE_POSITION = (540,300)
 
 SETTINGS_SPACING = 85
 
-KEY_PROMPTING_POSITION = (130,780)
+KEY_PROMPTING_POSITION = (60,770)
 
 CANVAS_CENTER_POSITION = (540,540)
 

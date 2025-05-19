@@ -28,7 +28,7 @@ def select_option(settings, current):
     image = prompt_image
     draw = ImageDraw.Draw(image)
     for i, j in enumerate(cmds_aime_text[1:3], start=1):
-        draw_selecting_options(draw, i, (f'{j:<20}' if i == 1 else f'{j:<17}') + f'{aime_settings[i-1]:>3}', (current == i - 1))
+        draw_selecting_options(draw, i, f'{j:<17}{aime_settings[i-1]:>3}', (current == i - 1))
     resize_and_display(_inst, image)
     if current == 0:
         _inst.root.bind("<KeyPress-Down>", lambda _: select_option(aime_settings, 1))
