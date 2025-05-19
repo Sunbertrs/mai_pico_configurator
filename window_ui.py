@@ -129,6 +129,10 @@ class MainUI:
     def execute_command(self, name, cmd):
         self.current_stat['text'] = connect_stat[2] + name + "."
         self.stop_draw_text = 1
+        self.root.unbind("<KeyPress-Left>")
+        self.root.unbind("<KeyPress-Right>")
+        self.root.unbind("<KeyPress-Up>")
+        self.root.unbind("<KeyPress-Down>")
         self.root.bind("<KeyPress-Escape>", lambda _: self.done_command("esc"))
         time.sleep(0.18)
         exec(f"from {cmd} import main as _command_main\nThread(target=_command_main, args=(self,)).start()")
