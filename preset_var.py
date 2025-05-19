@@ -3,7 +3,7 @@ import screeninfo
 import yaml
 import subprocess
 
-no_device_debug = False
+# no_device_debug = False
 
 with open("config.yaml") as f:
     config_file = yaml.safe_load(f)
@@ -50,7 +50,17 @@ SENSOR_INFO = (
     "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"
 )
 
-nkro_key = ("wedcxzaq", "89632147")
+NKRO_KEY = ("wedcxzaq", "89632147")
+
+GPIO_DEFAULT_DEFINITION = ("GP1", "GP0", "GP4", "GP5", "GP8", "GP9", "GP3", "GP2")
+
+GPIO_AUX_SEQUENCE = ("test", "service", "navigate", "coin")
+
+button_stat = (
+    "Connect",
+    "Disconnected",
+    "Connected"
+)
 
 connect_stat = {
     0: "Click the connect button to start.",
@@ -60,37 +70,43 @@ connect_stat = {
 }
 
 buttons = {
-    "Sensitivity adjust": 'cmds.sense',
+    "Sensitivity": 'cmds.sense',
     "LED brightness": 'cmds.level',
-    "Buttons adjust": 'cmds',
     "Aime": 'cmds.aime',
-    "Test": 'cmds',
+    "GPIO definition": 'cmds.gpio',
     "HID mode": 'cmds.hid',
     "Update firmware": 'cmds.update',
+    "Factory reset": 'cmds.factory',
 }
 
 message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
     "Reconfig": ("COM port reconfigured", "Port settings have reconfigured, please click the connect button again to try.\nIf the port is still incorrect, please manually correct it in config.yaml."),
     "Not_detected": ("Error", "Failed to connect to the port, make sure it is connected, and Powershell is not disabled."),
-    "Manual_port_repeat": ("Repeated value", "Value can't be the same."),
-    "Manual_port_empty": ("Empty value", "Value can't be empty."),
+    "Disconnected": ("Error", "Connection lost, please try again."),
+    "Manual_port_repeat": ("Repeated value", "The value can't be the same."),
+    "Manual_port_empty": ("Empty value", "The value can't be empty."),
+    "Manual_port_illegal": ("Illegal value", "The value is illegal."),
     "Manual_port_fail": ("Failed to connect", "Please check your connection, or specify the correct port."),
     "Update_firmware": ("Exiting", "The program will now exit.\nPut your firmware file into the disk that appeared."),
-    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer one.")
+    "Aime_unsupported": ("Failed to configure Aime", "The firmware you are using now does not support Aime.\nPlease upgrade to a newer version."),
+    "Gpio_unsupported": ("Failed to configure GPIO", "The firmware you are using now does not support GPIO.\nPlease upgrade to a newer version."),
+    "Gpio_not_nkro": ("Error", "Unavailable to configure GPIO definition in io4 mode."),
+    "Factory_warning": ("Warning", "Are you sure to reset?All your settings will lost!\n(Including sensitivity, button reassignment, etc.)"),
+    "Factory_done": ("Notice", "The settings have reset to default now.")
 }
 
 CANVAS_FONT_SET = (
-    ImageFont.truetype("fonts/NotoSans.ttf", 53),
-    ImageFont.truetype("fonts/NotoSans.ttf", 30),
-    ImageFont.truetype("fonts/NotoSans.ttf", 41)
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 53),
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 30),
+    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 41)
 )
 
 CMD_TITLE_POSITION = (540,300)
 
 SETTINGS_SPACING = 85
 
-KEY_PROMPTING_POSITION = (130,800)
+KEY_PROMPTING_POSITION = (60,770)
 
 CANVAS_CENTER_POSITION = (540,540)
 
@@ -168,10 +184,19 @@ area_subtitl_position = {
     "E8": (300,330)
 }
 
+setting_port_manually_text = (
+    "Setting the COM ports",
+    "Please specify the serial ports manually.",
+    "Command line:",
+    "Touch:",
+
+)
+
 cmds_sense_text = (
     "Sensitivity configuration",
 	"Type the area using your keyboard.\n\nPress 'g' for global sensitivity.",
 	"Adjusting: Arrow <Left> or <Right>\n\nBack: <Backspace>\n\nApply: <Enter>",
+    "Global"
 )
 
 cmds_hid_text = (
@@ -179,6 +204,7 @@ cmds_hid_text = (
     "Joy mode (io4)",
     "Default keyboard 1P",
     "Default keyboard 2P",
+    "Off",
 	"Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
 )
 
@@ -187,4 +213,24 @@ cmds_aime_text = (
     "Virtual AIC",
     "Protocol mode",
 	"Switch option: Arrow <Up> or <Down>\n\nAdjust: Arrow <Left> or <Right>\n\nApply: <Enter>",
+)
+
+cmds_gpio_text = (
+    "GPIO configuration",
+    "Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
+    "Main buttons",
+    "Aux buttons",
+    "Reset all",
+    #---
+    "Press the button in the correct sequence now.\n\nManual: <Insert>, Finish typing: <End>\n\nBack: <Backspace>",
+    "Apply?",
+    "Yes: <Enter>\n\nNo: <Backspace>",
+    #---
+    "Test",
+    "Service",
+    "Triangle key",
+    "Coin",
+    "Switch option: Arrow <Up> or <Down>\n\nInput: Just type it\n\nApply: <Enter>",
+    #---
+    "Are you sure to reset GPIO setting?",
 )
