@@ -54,11 +54,10 @@ def function_index(index):
         confirm_reset_gpio()
 
 def display_main_buttons():
-    global prompt_image
+    global prompt_image, subtitl_display_position
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
     title_display_position = [i[1] for i in area_title_position.items() if i[0].startswith("A")]
-    global subtitl_display_position
     subtitl_display_position = [i[1] for i in area_subtitl_position.items() if i[0].startswith("A")]
     for i, j in enumerate(title_display_position, start=1):
         draw.text(j, str(i), font=CANVAS_FONT_SET[0], fill="#000")
@@ -69,6 +68,8 @@ def edit_main_buttons(detected_value, current, key_position):
     if not detected_value.startswith("Insert"):
         if detected_value == "Reset":
             current = current - 1
+        elif detected_value == "" and current == 0:
+            pass
         else:
             gpio_definition[current-1] = GPIO_DEFAULT_DEFINITION[NKRO_KEY[int(key_position)-1].index(detected_value)]
     else:
@@ -77,8 +78,8 @@ def edit_main_buttons(detected_value, current, key_position):
     draw = ImageDraw.Draw(image)
 
     if detected_value.startswith("Insert") and len(detected_value) < 10 or len(detected_value) == 10 and int(detected_value[-2:]) > 28: current = current - 1
-    for i, j in zip(subtitl_display_position, enumerate(gpio_definition)):
-        draw.text(i, j[1], font=CANVAS_FONT_SET[1], fill="#E00" if current == j[0] else "#000")
+    for i, j in zip(subtitl_display_position, gpio_definition):
+        draw.text(i, j, font=CANVAS_FONT_SET[1], fill="#E00" if current == gpio_definition.index(j) else "#000")
     if detected_value.startswith("Insert") and len(detected_value) < 10 or len(detected_value) == 10 and int(detected_value[-2:]) > 28: current = current + 1
 
     for i in NKRO_KEY[int(key_position)-1]:
@@ -123,7 +124,6 @@ def edit_aux_buttons(detected_value, current):
     draw_title_and_prompting_keys(draw, "", cmds_gpio_text[12])
     if detected_value.startswith("GP"):
         gpio_definition[current] = detected_value
-    print(f'd:{detected_value}, {gpio_definition}')
     for i, j in enumerate(cmds_gpio_text[8:12]):
         draw_selecting_options(draw, i, f'{j:<17}{gpio_definition[i]:>5}', (current == i))
     resize_and_display(_inst, prompt_image)
