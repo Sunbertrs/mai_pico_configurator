@@ -3,8 +3,11 @@
 
 # Command line port and touch port config.
 # Windows: starts with COM, Linux or etc.: starts with /dev/tty
-cli_port: ''
-touch_port: ''
+cli_port: 'COM6'
+touch_port: 'COM3'
+led_port: ''
+aime_port: ''
+
 
 # Allow to modify the value of cli_port/touch_port in this file if you set them wrong.
 # Recommended if your list of COM port is messy. It relies on powershell.
