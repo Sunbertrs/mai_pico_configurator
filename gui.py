@@ -16,8 +16,8 @@ from communication import check_connect, create_connection, get_hardware_basic_i
 import draw
 
 class MainUI:
-    def __init__(self, root:Tk):
-        self.root = root
+    def __init__(self, root: Tk):
+        self.root: Tk = root
         self.root.title("Mai_pico Configurator")
 
         Style().configure("TButton", width=15)
