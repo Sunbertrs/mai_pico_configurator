@@ -37,11 +37,8 @@ class MainUI:
         self.cmd_list.grid(row=1, pady=15)
         self.cmd_btn = []
         for i, name in enumerate(buttons.keys()):
-            self.cmd_btn.append(Button(self.cmd_list, text=name, state=DISABLED, command=lambda current=name: self.execute_command(current, buttons[current])))
-            if canvas_size == 1080:
-                self.cmd_btn[i].grid(row=i//5, column=i%5, padx=30, pady=10)
-            else:
-                self.cmd_btn[i].grid(row=i//4, column=i%4, padx=12, pady=10)
+            self.cmd_btn.append(Button(self.cmd_list, text=name, state=DISABLED, command=lambda current=name: self.execute_feature(current, buttons[current])))
+            self.cmd_btn[i].grid(row=i//4, column=i%4, padx=18, pady=10)
 
         self.basic_info_frame = Frame(self.display_area)
         # ---
@@ -126,14 +123,14 @@ class MainUI:
         else:
             messagebox.showerror(*message_box_prompts["Not_detected"])
 
-    def execute_command(self, name, cmd):
+    def execute_feature(self, name, feat):
         self.current_stat['text'] = connect_stat[2] + name + "."
         self.stop_draw_text = 1
         for i in ["Left", "Right", "Up", "Down", "Return", "Insert", "End"] + [i for i in range(10)]:
             self.root.unbind(f"<KeyPress-{i}>")
         self.root.bind("<KeyPress-Escape>", lambda _: self.done_command("esc"))
         time.sleep(0.18)
-        exec(f"from {cmd} import main as _command_main\nThread(target=_command_main, args=(self,)).start()")
+        exec(f"from {feat} import main as _feature_main\nThread(target=_feature_main, args=(self,)).start()")
 
     def done_command(self, cmd):
         self.root.unbind("<KeyPress-Escape>")

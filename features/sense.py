@@ -1,9 +1,9 @@
 import sys
-sys.path.insert(0, sys.path[0].replace("cmds",""))
+sys.path.insert(0, sys.path[0].replace("features",""))
 from PIL import Image, ImageDraw
 
 from draw import draw_title_and_prompting_keys, resize_and_display
-from preset_var import CANVAS_FONT_SET, SENSOR_INFO, cmds_sense_text
+from preset_var import CANVAS_FONT_SET, SENSOR_INFO, feat_sense_text
 from communication import get_sensor_sense_adjust, adjust_sense_reset, adjust_sense
 
 SENSE_ADJUST_POSITION = (540,620)
@@ -14,7 +14,7 @@ def main(instance):
 
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_sense_text[0], cmds_sense_text[1])
+    draw_title_and_prompting_keys(draw, feat_sense_text[0], feat_sense_text[1])
     resize_and_display(_inst, prompt_image)
 
     for i in "ABCDEabcde":
@@ -29,7 +29,7 @@ def select_number(event):
     
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_sense_text[0], "")
+    draw_title_and_prompting_keys(draw, feat_sense_text[0], "")
     draw_title_and_prompting_keys(draw, pressed_key, "", center=1)
     
     resize_and_display(_inst, prompt_image)
@@ -49,9 +49,9 @@ def sensitivity_adjust(selected_area):
     if selected_area != "g":
         draw_title_and_prompting_keys(draw, selected_area, "", center=1)
     else:
-        draw_title_and_prompting_keys(draw, cmds_sense_text[3], "", center=1)
+        draw_title_and_prompting_keys(draw, feat_sense_text[3], "", center=1)
 
-    draw_title_and_prompting_keys(draw, cmds_sense_text[0], cmds_sense_text[2])
+    draw_title_and_prompting_keys(draw, feat_sense_text[0], feat_sense_text[2])
 
     prompt_image_edited = prompt_image.copy()
     draw = ImageDraw.Draw(prompt_image_edited)

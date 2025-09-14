@@ -3,7 +3,7 @@ from tkinter import messagebox
 
 from communication import get_gpio_info, get_hid_mode, gpio_reset, adjust_gpio_buttons
 from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
-from preset_var import cmds_gpio_text, CANVAS_FONT_SET, message_box_prompts, area_title_position, area_subtitl_position, \
+from preset_var import feat_gpio_text, CANVAS_FONT_SET, message_box_prompts, area_title_position, area_subtitl_position, \
     GPIO_DEFAULT_DEFINITION, NKRO_KEY, GPIO_AUX_SEQUENCE
 
 def main(instance):
@@ -25,8 +25,8 @@ def selecting(current):
     global prompt_image
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_gpio_text[0], cmds_gpio_text[1])
-    for i, j in enumerate(cmds_gpio_text[2:5], start=1):
+    draw_title_and_prompting_keys(draw, feat_gpio_text[0], feat_gpio_text[1])
+    for i, j in enumerate(feat_gpio_text[2:5], start=1):
         draw_selecting_options(draw, i, j, (current==i-1))
     resize_and_display(_inst, prompt_image)
     if current == 0:
@@ -106,7 +106,7 @@ def edit_main_buttons(detected_value, current, key_position):
     if current == 8:
         confirm_main_buttons(image, key_position)
     else:
-        draw_title_and_prompting_keys(draw, "", cmds_gpio_text[5])
+        draw_title_and_prompting_keys(draw, "", feat_gpio_text[5])
     resize_and_display(_inst, image)
 
 def confirm_main_buttons(image, key_position):
@@ -115,16 +115,16 @@ def confirm_main_buttons(image, key_position):
     _inst.root.bind("<KeyPress-Return>", lambda _: apply_buttons("main"))
     _inst.root.bind("<KeyPress-BackSpace>", lambda _:display_main_buttons())
     draw = ImageDraw.Draw(image)
-    draw_title_and_prompting_keys(draw, cmds_gpio_text[6], cmds_gpio_text[7], center=1)
+    draw_title_and_prompting_keys(draw, feat_gpio_text[6], feat_gpio_text[7], center=1)
 
 def edit_aux_buttons(detected_value, current):
     global prompt_image, gpio_definition
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, "", cmds_gpio_text[12])
+    draw_title_and_prompting_keys(draw, "", feat_gpio_text[12])
     if detected_value.startswith("GP"):
         gpio_definition[current] = detected_value
-    for i, j in enumerate(cmds_gpio_text[8:12]):
+    for i, j in enumerate(feat_gpio_text[8:12]):
         draw_selecting_options(draw, i, f'{j:<17}{gpio_definition[i]:>5}', (current == i))
     resize_and_display(_inst, prompt_image)
 
@@ -163,7 +163,7 @@ def apply_buttons(type):
 def confirm_reset_gpio():
     prompt_image = Image.new("RGBA", (1080, 1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_gpio_text[13], cmds_gpio_text[7], center=1)
+    draw_title_and_prompting_keys(draw, feat_gpio_text[13], feat_gpio_text[7], center=1)
     resize_and_display(_inst, prompt_image)
     _inst.root.bind("<KeyPress-Return>", lambda _: reset_gpio())
 

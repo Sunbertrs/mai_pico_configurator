@@ -70,13 +70,13 @@ connect_stat = {
 }
 
 buttons = {
-    "Sensitivity": 'cmds.sense',
-    "LED brightness": 'cmds.level',
-    "Aime": 'cmds.aime',
-    "GPIO definition": 'cmds.gpio',
-    "HID mode": 'cmds.hid',
-    "Update firmware": 'cmds.update',
-    "Factory reset": 'cmds.factory',
+    "Sensitivity": 'features.sense',
+    "LED brightness": 'features.level',
+    "Aime": 'features.aime',
+    "GPIO definition": 'features.gpio',
+    "HID mode": 'features.hid',
+    "Update firmware": 'features.update',
+    "Factory reset": 'features.factory',
 }
 
 message_box_prompts = {
@@ -192,14 +192,14 @@ setting_port_manually_text = (
 
 )
 
-cmds_sense_text = (
+feat_sense_text = (
     "Sensitivity configuration",
 	"Type the area using your keyboard.\n\nPress 'g' for global sensitivity.",
 	"Adjusting: Arrow <Left> or <Right>\n\nBack: <Backspace>\n\nApply: <Enter>",
     "Global"
 )
 
-cmds_hid_text = (
+feat_hid_text = (
 	"HID mode configuration",
     "Joy mode (io4)",
     "Default keyboard 1P",
@@ -208,14 +208,14 @@ cmds_hid_text = (
 	"Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
 )
 
-cmds_aime_text = (
+feat_aime_text = (
 	"Aime configuration",
     "Virtual AIC",
     "Protocol mode",
 	"Switch option: Arrow <Up> or <Down>\n\nAdjust: Arrow <Left> or <Right>\n\nApply: <Enter>",
 )
 
-cmds_gpio_text = (
+feat_gpio_text = (
     "GPIO configuration",
     "Switch option: Arrow <Up> or <Down>\n\nApply: <Enter>",
     "Main buttons",

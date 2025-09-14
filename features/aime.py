@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 from tkinter import messagebox
 
 from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
-from preset_var import message_box_prompts, cmds_aime_text, CANVAS_FONT_SET
+from preset_var import message_box_prompts, feat_aime_text
 from communication import get_aime_info, adjust_aime_virtual_aic, adjust_aime_protocol_mode
 
 def main(instance):
@@ -18,7 +18,7 @@ def main(instance):
     global prompt_image
     prompt_image = Image.new("RGBA", (1080,1080))
     draw = ImageDraw.Draw(prompt_image)
-    draw_title_and_prompting_keys(draw, cmds_aime_text[0], cmds_aime_text[3])
+    draw_title_and_prompting_keys(draw, feat_aime_text[0], feat_aime_text[3])
     draw_selecting_options(draw, 4, f"NFC module - {status}", 0)
     select_option(list(get_aime_info(more=1)), 0)
 
@@ -27,7 +27,7 @@ def select_option(settings, current):
     aime_settings = settings
     image = prompt_image.copy()
     draw = ImageDraw.Draw(image)
-    for i, j in enumerate(cmds_aime_text[1:3], start=1):
+    for i, j in enumerate(feat_aime_text[1:3], start=1):
         draw_selecting_options(draw, i, f'{j:<17}{aime_settings[i-1]:>3}', (current == i - 1))
     resize_and_display(_inst, image)
     if current == 0:
