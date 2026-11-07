@@ -1,0 +1,25 @@
+# mai_pico configurator configuration
+# When config.yaml is missing, the program copies this template into the
+# program directory.
+
+# Serial ports. Windows: 'COM3'; Linux/macOS: '/dev/ttyACM0'.
+# You can leave empty and they will be auto-filled when connecting (requires auto_port_config).
+cli_port: ''
+touch_port: ''
+led_port: ''
+aime_port: ''
+
+# Allow the program to rewrite the ports above when they are wrong.
+auto_port_config: true
+
+# Show the sensitivity adjustment next to the raw readings, e.g. 900(+1).
+always_show_sense_adjust: true
+
+# Interval between raw reading refreshes, in seconds.
+# 0 means: refresh only after connecting or after a command finished.
+raw_readings_interval_time: 1.5
+
+# Any ttkbootstrap theme name, for example:
+# bootstrap-light / bootstrap-dark / nord-light / nord-dark / one-light / one-dark
+# catppuccin-light / catppuccin-dark / gruvbox-light / dracula-dark / tokyo-night-dark
+theme: bootstrap-light
