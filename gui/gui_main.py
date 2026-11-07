@@ -204,17 +204,31 @@ class ManualSelectPort:
 
         Button(self.root, text='OK', command=self.validate_config).grid(row=3, padx=15, pady=10)
 
-    def set_touch(self, imagelist):
-        if len(imagelist) == 0:
-            self.canvas.delete("touch")
+    def validate_config(self):
+        _cli_port = self.select_list[0][1].get()
+        _touch_port = self.select_list[1][1].get()
+        if _cli_port == _touch_port:
+            messagebox.showwarning(*message_box_prompts["Manual_port_repeat"])
+            self.root.destroy()
             return
-        if len(self.sensor_touch_prev) != 0 and self.sensor_touch_prev == imagelist:
+        elif _cli_port == '' or _touch_port == '':
+            messagebox.showwarning(*message_box_prompts["Manual_port_empty"])
+            self.root.destroy()
             return
-        sensor_touch_stat = Image.new('RGBA', (canvas_size,) * 2)
-        for i in imagelist:
-            sensor_touch_stat.paste(i, (0, 0), i)
-        self.sensor_touch_photoimage = ImageTk.PhotoImage(sensor_touch_stat.resize((canvas_size,) * 2))
-        self.canvas.delete("touch")
-        self.canvas.create_image(canvas_size/2, canvas_size/2, image=self.sensor_touch_photoimage, tag="touch")
-        self.canvas.tag_raise("text")
-        self.sensor_touch_prev = imagelist
+        elif not _cli_port.startswith(("COM", "/dev/")) or not _touch_port.startswith(("COM", "/dev/")):
+            messagebox.showwarning(*message_box_prompts["Manual_port_illegal"])
+            self.root.destroy()
+            return
+        self.write_config()
+
+    def write_config(self):
+        with open('config.yaml', 'r') as f:
+            config_content = f.readlines()
+            config_content[5] = f"cli_port: '{self.select_list[0][1].get()}'\n"
+            config_content[6] = f"touch_port: '{self.select_list[1][1].get()}'\n"
+        with open('config.yaml', 'w+') as f:
+            f.writelines(config_content)
+
+        if gui_process.check_connect() != (1,):
+            messagebox.showerror(*message_box_prompts["Manual_port_fail"])
+            self.root.destroy()
