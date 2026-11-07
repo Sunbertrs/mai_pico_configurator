@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from gui import MainUI
+from gui.gui_main import MainUI
 
 root = tk.Tk()
 program = MainUI(root)
