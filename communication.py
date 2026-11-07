@@ -14,7 +14,7 @@ def check_connect():
         cli = serial.Serial(config['cli_port'])
         touch = serial.Serial(config['touch_port'])
     except Exception as e:
-        stat =  (0, e)
+        stat = (0, str(e))
     else:
         cli.close()
         touch.close()
@@ -253,11 +253,13 @@ def init_sensor_touch():
         port.write(b'{STAT}')
 
         response = []
-        while len(response) < 9:
+        for _ in range(90):
             response.append(port.read())
-            if len(response) == 9 and response[0] != b'(' and response[-1] != b')':
+            if len(response) == 9 and response[0] == b'(' and response[-1] == b')':
+                return 1
+            elif len(response) > 9 and response[0] != b'(' and response[-1] != b')':
                 del response[0]
-    return 1
+    return 0
 
 def get_sensor_touch():
     with using(touch_port) as port:
