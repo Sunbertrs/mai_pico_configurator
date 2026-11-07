@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 
 import draw
 from gui.gui_manual import ManualSelectUI
-from communication import check_connection, create_connection, stop_get_touch_info, init_sensor_touch, \
+from communication import check_connect, create_connection, stop_get_touch_info, init_sensor_touch, \
     get_hardware_basic_info
 from preset_var import button_stat, message_box_prompts, get_canvas_size  # connect_stat,
 
@@ -45,22 +45,23 @@ def connect_error_messagebox(error_info: str, gui_inst=None) -> None:
     if "PermissionError" in error_info:
         messagebox.showerror(message_box_prompts["Denied"][0], message_box_prompts["Denied"][1]+"\n"+error_info)
     elif "FileNotFoundError" in error_info:
-        messagebox.showerror(*message_box_prompts["Incorrect_config"])
         if configuration()["auto_port_config"]:
             auto_config()
         else:
             manual_config(gui_inst)
 
 def connect_button_clicked(gui_inst) -> None:
-    stat = check_connection()
-    if stat == (1, ""):
+    stat = check_connect()
+    if stat == (1,):
         create_connection()
         gui_update_after_connected(gui_inst)
-        init_sensor_touch()
-        Thread(target=gui_inst.canvas_handler.daemon_draw_text, daemon=True).start()
-        Thread(target=gui_inst.canvas_handler.daemon_draw_touch, daemon=True).start()
-        for i in gui_inst.cmd_btn: i['state'] = NORMAL
-        return
+        if init_sensor_touch():
+            Thread(target=gui_inst.canvas_handler.daemon_draw_text, daemon=True).start()
+            Thread(target=gui_inst.canvas_handler.daemon_draw_touch, daemon=True).start()
+            for i in gui_inst.cmd_btn: i['state'] = NORMAL
+            return
+        else:
+            messagebox.showerror(*message_box_prompts["Communicate_failed"])
     elif stat[1] == "no_value":
         if configuration()["auto_port_config"]:
             auto_config()

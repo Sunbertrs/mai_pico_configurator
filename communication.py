@@ -10,9 +10,6 @@ def check_connect():
         config = yaml.safe_load(f)
     if '' in (config['cli_port'], config['touch_port']):
         return ('Not_set',)
-    # if no_device_debug:
-    #     print("No device debug mode is enabled.")
-    #     return (1,)
     try:
         cli = serial.Serial(config['cli_port'])
         touch = serial.Serial(config['touch_port'])
@@ -55,17 +52,17 @@ def get_hardware_basic_info():
     with using(cli_port) as port:
         port.write(b'?\n')
         response = [i.decode().strip() for i in port.readlines()[:8]]
-        basic_info = [i for i in response if "SN" in i][0]
+        basic_info = [i for i in response if "SN" in i]
     try:
-        basic_info = basic_info + "\n" + [i for i in response if "Built" in i][0]
+        basic_info += [i for i in response if "Built" in i]
     except IndexError:
         pass
-    basic_info = basic_info + f"\nCli: {cli_port}; Touch: {touch_port}"
-    basic_info = basic_info + f"\nBrightness level: " + get_brightness_level()
-    basic_info = basic_info + f"\nGlobal sensitivity: " + get_sensor_sense_adjust(index='g')
+    # basic_info = basic_info + f"\nCli: {cli_port}; Touch: {touch_port}"
+    basic_info += [get_brightness_level()]
+    basic_info += [get_sensor_sense_adjust(index='g')]
     hid_stat = get_hid_mode()
-    basic_info = basic_info + f"\nHID mode: {hid_stat}" + ("(Button is stuck, force using io4)" if hid_stat[-1] == "!" else "")
-    basic_info = basic_info + f"\nNFC module: " + get_aime_info()
+    basic_info += [hid_stat + ("(Button is stuck, force using io4)" if hid_stat[-1] == "!" else "")]
+    basic_info += [get_aime_info()]
 
     return basic_info
 

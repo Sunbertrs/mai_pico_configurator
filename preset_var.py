@@ -81,6 +81,7 @@ buttons = {
 
 message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
+    "Communicate_failed": ("Error", "Failed to communicate to the touch port after trying 3 times"),
     "Reconfig": ("COM port reconfigured", "Port settings have reconfigured, please click the connect button again to try.\nIf the port is still incorrect, please manually correct it in config.yaml."),
     "Not_detected": ("Error", "Failed to connect to the port, make sure it is connected, and Powershell is not disabled."),
     "Disconnected": ("Error", "Connection lost, please try again."),
