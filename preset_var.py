@@ -62,6 +62,10 @@ button_stat = (
     "Connected"
 )
 
+PORT_LABELS = ("Command line","Touch","LED","Aime")
+
+BASIC_INFO_LABEL = ("Basic info","SN","Built","Brightness level","Global sensitivity","HID mode","NFC module")
+
 connect_stat = {
     0: "Click the connect button to start.",
     1: "Program is running normally.",
@@ -97,10 +101,9 @@ message_box_prompts = {
     "Factory_done": ("Notice", "The settings have reset to default now.")
 }
 
-CANVAS_FONT_SET = (
-    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 53),
-    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 30),
-    ImageFont.truetype("fonts/NotoSansMono-Regular.ttf", 41)
+CANVAS_FONT_SET = tuple(
+    ImageFont.truetype(str(FONTS_DIR / "NotoSansMono-Regular.ttf"), size)
+    for size in (53, 30, 41)
 )
 
 CMD_TITLE_POSITION = (540,300)
