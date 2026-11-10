@@ -1,4 +1,39 @@
+import shutil
+import sys
+from pathlib import Path
 from PIL import ImageFont
+
+def app_dir() -> Path:
+    """
+    Optimize for the case project was packed
+    """
+    return Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+
+
+def resource_dir() -> Path:
+    """
+    Resource directory also optimize for the case when project was packed
+    """
+    bundle = getattr(sys, "_MEIPASS", None)
+    return Path(bundle) if bundle else Path(__file__).resolve().parent
+
+
+CONFIG_PATH = app_dir() / "config.yaml"
+DEFAULT_CONFIG_PATH = resource_dir() / "etc" / "config.default.yaml"
+IMAGES_DIR = resource_dir() / "images"
+FONTS_DIR = resource_dir() / "fonts"
+
+
+def config_file_path() -> Path:
+    """
+    Return config file the pathlib.Path
+    """
+    if not CONFIG_PATH.exists():
+        # data = DEFAULT_CONFIG_PATH.read_bytes() if DEFAULT_CONFIG_PATH.exists() else b""
+        # CONFIG_PATH.write_bytes(data)
+        shutil.copyfile(DEFAULT_CONFIG_PATH, CONFIG_PATH)
+    return CONFIG_PATH
+
 
 def load_config() -> dict:
     try:
