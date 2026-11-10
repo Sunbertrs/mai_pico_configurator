@@ -11,7 +11,7 @@ AREA_ACT_CANVAS = []
 rotate_angle = 0
 
 for i, area in enumerate(SENSOR_INFO):
-    exec(f'AREA_ACT_CANVAS.append(Image.open("images/canvas{area[0]}.png"))')
+    exec(f'AREA_ACT_CANVAS.append(Image.open("images/hilight{area[0]}.png"))')
     AREA_ACT_CANVAS[-1] = AREA_ACT_CANVAS[-1].rotate(rotate_angle)
     if canvas_size == 1080:
         AREA_ACT_CANVAS[-1] = AREA_ACT_CANVAS[-1].resize((canvas_size,) * 2)
