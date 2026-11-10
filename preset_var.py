@@ -1,20 +1,15 @@
 from PIL import ImageFont
-import screeninfo
-import yaml
-import subprocess
 
-# no_device_debug = False
+def load_config() -> dict:
+    try:
+        with config_file_path().open(encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except (OSError, yaml.YAMLError):
+        return {}
+    return data
 
-with open("config.yaml") as f:
-    config_file = yaml.safe_load(f)
 
-def get_canvas_size():
-    monitor_info = screeninfo.get_monitors()
-    size = 500
-    if config_file["auto_large_ui"]:
-        for monitor in monitor_info:
-            if monitor.width < monitor.height: size = 1080
-    return size
+CONFIG_FILE = load_config()
 
 canvas_size = get_canvas_size()
 

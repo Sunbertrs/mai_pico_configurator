@@ -12,7 +12,7 @@ from . import gui_process
 if os.name != "nt":
     import glob
 
-from preset_var import connect_stat, message_box_prompts, canvas_size, get_com_list, config_file, buttons, button_stat, \
+from preset_var import connect_stat, message_box_prompts, canvas_size, get_com_list, CONFIG_FILE, buttons, button_stat, \
     setting_port_manually_text, PORT_LABELS, BASIC_INFO_LABEL
 # from communication import create_connection, get_hardware_basic_info, init_sensor_touch, stop_get_touch_info
 import draw
@@ -150,13 +150,13 @@ class MainUI:
 
     def daemon_draw_text(self):
         while True:
-            if config_file["raw_readings_interval_time"] == 0:
+            if CONFIG_FILE["raw_readings_interval_time"] == 0:
                 self.stop_draw_text = 1
             if not self.stop_draw_text:
                 tmp = draw.draw_text()
                 if tmp == "Lost": break
                 elif not self.stop_draw_text: self.canvas_handler.set_text(tmp)
-            time.sleep(config_file["raw_readings_interval_time"])
+            time.sleep(CONFIG_FILE["raw_readings_interval_time"])
     
     def daemon_draw_touch(self):
         while True:
