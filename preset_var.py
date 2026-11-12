@@ -46,6 +46,34 @@ def load_config() -> dict:
 
 CONFIG_FILE = load_config()
 
+
+def update_config(**modified_items) -> None:
+    """
+    Rewrite the modified value in the config file
+    """
+    lines = config_file_path().read_text(encoding="utf-8").splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith("#"):
+            continue
+        key = line.split(":")[0].strip()
+        if key in modified_items:
+            lines[index] = f"{key}: {modified_items[key]}"
+            del modified_items[key]
+    lines.extend(f"{key}: {value}" for key, value in modified_items.items())
+    CONFIG_PATH.write_text("\n".join(lines), encoding="utf-8")
+
+
+def config_get(key, default=None):
+    value = CONFIG_FILE.get(key)
+    return default if value is None else value
+
+def get_canvas_size() -> int:
+    if config_get("auto_large_ui", False):
+        for monitor in screeninfo.get_monitors():
+            if monitor.width < monitor.height:
+                return 1080
+    return 500
+
 canvas_size = get_canvas_size()
 
 def get_com_list():
@@ -108,9 +136,7 @@ buttons = {
     "LED brightness": 'features.level',
     "Aime": 'features.aime',
     "GPIO definition": 'features.gpio',
-    "HID mode": 'features.hid',
-    "Update firmware": 'features.update',
-    "Factory reset": 'features.factory',
+    "HID mode": 'features.hid'
 }
 
 message_box_prompts = {
