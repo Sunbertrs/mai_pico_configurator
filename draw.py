@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 
-from preset_var import canvas_size, CANVAS_FONT_SET, SENSOR_INFO, config_file, area_title_position, \
+from preset_var import canvas_size, CANVAS_FONT_SET, SENSOR_INFO, CONFIG_FILE, area_title_position, \
     area_subtitl_position, CMD_TITLE_POSITION, KEY_PROMPTING_POSITION, SETTINGS_SPACING, CANVAS_CENTER_POSITION
 from communication import get_sensor_raw_readings, get_sensor_sense_adjust, combine_raw_and_sense_adjust, get_sensor_touch
 
