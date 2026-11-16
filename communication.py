@@ -1,294 +1,521 @@
-import time
-import serial
-import yaml
-import re
+"""
+Each port is a separate object with its own connection and its own lock, so the
+background pollers and the UI never fight over one device. Every public method
+takes that lock, which keeps a multi-command sequence such as adjusting the
+sensitivity atomic.
+"""
 
-from preset_var import sensor_area
+from __future__ import annotations
+
+import re
+import threading
+import time
+from contextlib import contextmanager
+
+import serial
+
+from preset_var import config_get, sensor_area
+
+IDLE_TIMEOUT = 0.08
+TOUCH_FRAME = 9
+
+
+class DeviceError(RuntimeError):
+    """A serial operation could not be completed."""
+
+
+class SerialPort:
+    """
+    One serial port: connection state, a reentrant lock and error mapping.
+    """
+
+    def __init__(self, label: str):
+        self.label = label
+        self.port_name = ""
+        self._lock = threading.RLock()
+        self._serial = None
+
+    def open(self, port_name: str) -> None:
+        with self.exclusive():
+            self._close_locked()
+            try:
+                self._serial = serial.Serial(port_name, timeout=0.02)
+            except (serial.SerialException, OSError) as exc:
+                print(exc)
+                raise DeviceError(f"cannot open {port_name} ({self.label}): {exc}") from exc
+            self.port_name = port_name
+
+    def close(self) -> None:
+        with self.exclusive():
+            self._close_locked()
+
+    def is_open(self) -> bool:
+        return self._serial is not None and self._serial.is_open
+
+    @contextmanager
+    def exclusive(self):
+        """
+        Hold the port lock; give up with DeviceError instead of waiting forever.
+        """
+        if not self._lock.acquire(timeout=5.0):
+            raise DeviceError(f"{self.label} is busy")
+        try:
+            yield self
+        finally:
+            self._lock.release()
+
+    def _close_locked(self) -> None:
+        try:
+            if self._serial is not None and self._serial.is_open:
+                self._serial.close()
+        except (serial.SerialException, OSError):
+            pass
+        self._serial = None
+
+    def _require_port(self):
+        if self._serial is None or not self._serial.is_open:
+            raise DeviceError(f"{self.label} is not open")
+        return self._serial
+
+
+class CliPort(SerialPort):
+    def __init__(self):
+        super().__init__("command port")
+
+    # ---------- low level ----------
+    def submit(self, command: str) -> list[str]:
+        """
+        Send one command and return the reply lines.
+        """
+        with self.exclusive():
+            port = self._require_port()
+            try:
+                port.reset_input_buffer()
+                port.write(command.encode())
+            except (serial.SerialException, OSError) as exc:
+                raise DeviceError(f"write failed: {exc}") from exc
+            return self._read_lines(port)
+
+    @staticmethod
+    def _read_lines(port) -> list[str]:
+        """
+        Read until the prompt shows up, or until the line stream goes quiet.
+        """
+        lines = []
+        deadline = time.monotonic() + 1.0
+        last_data = time.monotonic()
+        while time.monotonic() < deadline:
+            if lines and time.monotonic() - last_data > IDLE_TIMEOUT:
+                break
+            try:
+                raw = port.readline()
+            except (serial.SerialException, OSError) as exc:
+                raise DeviceError(f"read failed: {exc}") from exc
+            if not raw:
+                continue
+            text = raw.decode().strip()
+            if text.endswith("mai_pico>"):
+                break
+            lines.append(text)
+            last_data = time.monotonic()
+        return lines
+
+    # ---------- display parsing ----------
+    @staticmethod
+    def parse_sections(lines: list[str]) -> dict[str, list[str]]:
+        """
+        Split a `display` reply into sections.
+
+        A section starts at a line like "[HID]" and runs until the next such
+        line, so the result maps "HID" to the lines below it.
+        """
+        sections = {}
+        current = None
+        for line in lines:
+            text = line.strip()
+            if text.startswith("[") and text.endswith("]"):
+                current = sections.setdefault(text[1:-1], [])
+            elif current is not None and text:
+                current.append(text)
+        return sections
+
+    @staticmethod
+    def _after_colon(line: str) -> str:
+        """Text after the first colon: "Level: 127" -> "127"."""
+        return line.split(":", 1)[1].strip() if ":" in line else ""
+
+    @classmethod
+    def _section_value(cls, lines, prefix: str, default: str = "N/A") -> str:
+        for line in lines:
+            if line.lower().startswith(prefix.lower()):
+                value = cls._after_colon(line)
+                return value if value else default
+        return default
+
+    @classmethod
+    def _rgb_level(cls, sections) -> str:
+        return cls._section_value(sections.get("RGB", []), "Level")
+
+    @classmethod
+    def _sense_value(cls, sections, index=None):
+        sense = sections.get("Sense", [])
+        if index == "g":
+            for line in sense:
+                if "global" in line.lower():
+                    # The line reads "Sensitivity (global: +1):", so keep only
+                    # the sign and the digits to end up with "+1".
+                    value = re.sub(r"[^+\-0-9]", "", line)
+                    return "0" if value in ("", "+0", "-0") else value
+            return "0"
+        grid = []
+        for line in sense:
+            if line[:1] in sensor_area and "|" in line:
+                grid.extend(part.strip() for part in line.split("|")[1:-1])
+        if not grid:
+            return [] if index is None else "0"
+        adjusted = []
+        for value in grid:
+            try:
+                number = int(value)
+            except ValueError:
+                adjusted.append("0")
+                continue
+            if number == 0:
+                adjusted.append("0")
+            elif number < 128:
+                adjusted.append(f"+{number}")
+            else:
+                adjusted.append(f"-{256 - number}")
+        if index is None:
+            return adjusted
+        try:
+            return adjusted[int(index)]
+        except (ValueError, IndexError):
+            return "0"
+
+    @staticmethod
+    def _hid(sections, ignore_stuck=None) -> str:
+        hid = sections.get("HID", [])
+        if not hid:
+            return "unknown"
+        first = hid[0].lower()
+        if "joy: on" in first or "io4: on" in first:
+            mode = "io4"
+        elif "nkro" in first:
+            # "Joy: off, NKRO: key1" -> "key1"
+            mode = first.split("nkro", 1)[1].lstrip(":").strip()
+        else:
+            mode = "unknown"
+        if len(hid) > 1 and hid[1].startswith("!!!") and not ignore_stuck:
+            mode += "!"
+        return mode
+
+    @classmethod
+    def _aime_fields(cls, sections) -> dict:
+        aime = sections.get("AIME", [])
+        return {
+            "NFC Module": cls._section_value(aime, "NFC Module"),
+            "Virtual AIC": cls._section_value(aime, "Virtual AIC"),
+            "Protocol Mode": cls._section_value(aime, "Protocol Mode"),
+        }
+
+    @staticmethod
+    def _parse_gpio_line(line: str) -> list[str]:
+        """Turn "Main: 1, 0, 4" or "Main: GP1 GP0 GP4" into ["GP1", "GP0", "GP4"]."""
+        body = line.split(":", 1)[1] if ":" in line else line
+        values = []
+        for token in body.replace(",", " ").split():
+            if token.upper().startswith("GP"):
+                token = token[2:]
+            if token.isdigit():
+                values.append(f"GP{token}")
+        return values
+
+    @classmethod
+    def _gpio_rows(cls, sections) -> list[list[str]]:
+        return [cls._parse_gpio_line(line) for line in sections.get("GPIO", [])]
+
+    @staticmethod
+    def _is_unsupported(lines) -> bool:
+        return any("unknown command" in line.lower() for line in lines)
+
+    # ---------- reads ----------
+    def read_display(self) -> dict:
+        return self.parse_sections(self.submit("display\n"))
+
+    def device_info(self) -> dict:
+        """One round trip for the header panel."""
+        header = self.submit("?\n")
+        info = {"SN": "N/A", "Built": "N/A"}
+        for line in header:
+            key = line.partition(":")[0].strip()
+            if key in info:
+                info[key] = self._after_colon(line) or "N/A"
+        sections = self.read_display()
+        info["Brightness level"] = self._rgb_level(sections)
+        info["Global sensitivity"] = self._sense_value(sections, "g")
+        info["HID mode"] = self._hid(sections)
+        info["NFC module"] = self._aime_fields(sections)["NFC Module"]
+        return info
+
+    def basic_info(self) -> list:
+        """Same six values as before, in the same order."""
+        info = self.device_info()
+        return [
+            info["SN"],
+            info["Built"],
+            info["Brightness level"],
+            info["Global sensitivity"],
+            info["HID mode"],
+            info["NFC module"],
+        ]
+
+    def raw_readings(self) -> list[str]:
+        readings = []
+        for line in self.submit("raw\n"):
+            text = line.strip()
+            if text[:1] in sensor_area and "|" in text:
+                readings.extend(part.strip() for part in text.split("|")[1:-1])
+        return readings
+
+    def sense_adjust(self, index=None):
+        return self._sense_value(self.read_display(), index)
+
+    def brightness_level(self) -> str:
+        return self._rgb_level(self.read_display())
+
+    def hid_mode(self, ignore_stuck=None) -> str:
+        return self._hid(self.read_display(), ignore_stuck)
+
+    def hid_off_available(self) -> int:
+        for line in self.submit("hid\n"):
+            if "off" in line.lower():
+                return 1
+        return 0
+
+    def naming_joy(self) -> bool:
+        hid = self.read_display().get("HID", [])
+        return bool(hid) and "joy" in hid[0].lower()
+
+    def aime_info(self, more=None):
+        if self._is_unsupported(self.submit("aime\n")):
+            return "Unsupported"
+        fields = self._aime_fields(self.read_display())
+        if not more:
+            return fields["NFC Module"]
+        return (fields["Virtual AIC"], fields["Protocol Mode"])
+
+    def gpio_info(self, aux=None):
+        if self._is_unsupported(self.submit("gpio\n")):
+            return "Unsupported"
+        rows = self._gpio_rows(self.read_display())
+        row = 1 if aux else 0
+        return rows[row] if len(rows) > row else []
+
+    # ---------- commands ----------
+    def sense_reset(self, area) -> None:
+        command = "sense 0\n" if area == "g" else f"sense {area} 0\n"
+        self.submit(command)
+
+    def adjust_sense(self, area, value) -> None:
+        """Apply a relative sensitivity change; the whole sequence is atomic."""
+        step = "+" if value > 0 else "-"
+        with self.exclusive():
+            for _ in range(abs(value)):
+                if area == "g":
+                    self.submit(f"sense {step}\n")
+                else:
+                    self.submit(f"sense {area} {step}\n")
+
+    def set_hid_mode(self, mode) -> None:
+        if mode == "io4" and self.naming_joy():
+            mode = "joy"
+        self.submit(f"hid {mode}\n")
+
+    def set_aime_virtual_aic(self, value) -> None:
+        self.submit(f"aime virtual {value.lower()}\n")
+
+    def set_aime_protocol_mode(self, value) -> None:
+        self.submit(f"aime mode {value}\n")
+
+    def set_brightness(self, value) -> None:
+        self.submit(f"level {value}\n")
+
+    def set_gpio(self, kind, definition) -> None:
+        if kind == "main":
+            self.submit(f"gpio main {definition}\n")
+        elif kind == "aux":
+            self.submit(f"gpio {definition}\n")
+
+    def gpio_reset(self) -> None:
+        self.submit("gpio reset\n")
+
+    def factory_reset(self) -> None:
+        self.submit("factory\n")
+
+    def update_firmware(self) -> None:
+        """Ask the device to reboot into its firmware disk; the port disappears."""
+        try:
+            self.submit("update\n")
+        except DeviceError:
+            pass
+
+
+class TouchPort(SerialPort):
+    def __init__(self):
+        super().__init__("touch port")
+
+    def write(self, data: bytes) -> None:
+        with self.exclusive():
+            port = self._require_port()
+            try:
+                port.write(data)
+            except (serial.SerialException, OSError) as exc:
+                raise DeviceError(f"touch write failed: {exc}") from exc
+
+    def flush(self) -> None:
+        with self.exclusive():
+            port = self._serial
+            if port is not None and port.is_open:
+                try:
+                    port.reset_input_buffer()
+                except (serial.SerialException, OSError):
+                    pass
+
+    def read_frame(self, timeout: float = 0.05) -> bytes:
+        """
+        Return one whole frame, or b"" when nothing arrived in time.
+        """
+        with self.exclusive():
+            port = self._serial
+            if port is None or not port.is_open:
+                return b""
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                if port.in_waiting < TOUCH_FRAME:
+                    time.sleep(0.002)
+                    continue
+                try:
+                    resp = port.read(port.in_waiting)
+                    if (resp[-9] != b"("[0]) and (resp[-1] != b")"[0]):
+                        continue
+                    return resp[-9:]
+                except (serial.SerialException, OSError):
+                    return b""
+            return b""
+
+    def init_panel(self) -> bool:
+        """Configure the panel and wait for the first status frame."""
+        # Thanks to @CVSJason(Github) for the reference on touch port communication implementation
+        try:
+            self.write(b"{RSET}")
+            self.write(b"{HALT}")
+            self.write(b"{LAr2}")
+            for area in range(0x41, 0x63):
+                self.write(b"{L" + bytes([area]) + b"r" + bytes([0x32]) + b"}")
+            for area in range(0x41, 0x63):
+                self.write(b"{L" + bytes([area]) + b"k" + bytes([0x28]) + b"}")
+            self.write(b"{STAT}")
+            self.flush()
+            self.read_frame(timeout=1.0)
+        except DeviceError:
+            return False
+        return True
+
+    def read_touch(self) -> list[int]:
+        """Return 34 touch flags, or [] when no frame is ready."""
+        frame = self.read_frame()
+        bits = []
+        for byte in frame[1:]:
+            for bit in range(5):
+                bits.append(1 if byte & (1 << bit) else 0)
+        return bits[:34]
+
+    def stop(self) -> None:
+        try:
+            self.write(b"{RSET}")
+            self.write(b"{HALT}")
+        except DeviceError:
+            pass
+
+
+cli = CliPort()
+touch = TouchPort()
+
+
+def connect(cli_port: str, touch_port: str) -> None:
+    """Open both ports; if the touch port fails, the command port is closed again."""
+    cli.open(cli_port)
+    try:
+        touch.open(touch_port)
+    except DeviceError:
+        cli.close()
+        raise
+
+
+def disconnect() -> None:
+    touch.close()
+    cli.close()
+
+
+def is_connected() -> bool:
+    return cli.is_open()
+
+
+def combine_raw_and_sense_adjust(raw, adjust) -> list[str]:
+    """Merge readings and adjustments for display; not port related."""
+    merged = list(raw)
+    for index, value in enumerate(adjust):
+        if value != "0" and index < len(merged):
+            merged[index] = f"{merged[index]}({value})"
+    return merged
+
+def get_hardware_basic_info(): return cli.basic_info()
+def get_sensor_raw_readings(): return cli.raw_readings()
+def get_sensor_sense_adjust(index=None): return cli.sense_adjust(index)
+def get_brightness_level(): return cli.brightness_level()
+def get_hid_mode(ignore_stuck=None): return cli.hid_mode(ignore_stuck)
+def get_hid_off_mode_availability(): return cli.hid_off_available()
+def get_naming_joy(): return cli.naming_joy()
+def get_aime_info(more=None): return cli.aime_info(more)
+def get_gpio_info(aux=None): return cli.gpio_info(aux)
+def adjust_sense_reset(area): return cli.sense_reset(area)
+def adjust_sense(area, value): return cli.adjust_sense(area, value)
+def adjust_hid_mode(mode): return cli.set_hid_mode(mode)
+def adjust_aime_virtual_aic(value): return cli.set_aime_virtual_aic(value)
+def adjust_aime_protocol_mode(value): return cli.set_aime_protocol_mode(value)
+def adjust_brightness_level(value): return cli.set_brightness(value)
+def adjust_gpio_buttons(kind, definition): return cli.set_gpio(kind, definition)
+def gpio_reset(): return cli.gpio_reset()
+def factory_reset(): return cli.factory_reset()
+def program_update(): return cli.update_firmware()
+def init_sensor_touch(): return touch.init_panel()
+def get_sensor_touch(): return touch.read_touch()
+def stop_get_touch_info(): return touch.stop()
+
+cli_port = ""
+touch_port = ""
+
 
 def check_connect():
-    with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-    if '' in (config['cli_port'], config['touch_port']):
-        return ('Not_set',)
+    conf_cli = config_get("cli_port", "")
+    conf_touch = config_get("touch_port", "")
+    if not conf_cli or not conf_touch:
+        return ("Not_set",)
+    probe_cli, probe_touch = CliPort(), TouchPort()
     try:
-        cli = serial.Serial(config['cli_port'])
-        touch = serial.Serial(config['touch_port'])
-    except Exception as e:
-        stat = (0, str(e))
-    else:
-        cli.close()
-        touch.close()
-        stat = (1,)
+        probe_cli.open(conf_cli)
+        probe_touch.open(conf_touch)
+    except DeviceError as exc:
+        return (0, str(exc))
     finally:
-        return stat
+        probe_cli.close()
+        probe_touch.close()
+    return (1,)
 
-class using:
-    def __init__(self, port):
-        self.port = port
-    def __enter__(self):
-        try:
-            self.serial = serial.Serial(self.port, timeout=0.2)
-        except Exception:
-            time.sleep(0.18)
-            self.__enter__()
-            pass
-        return self.serial
-    def __exit__(self, *args):
-        if self.serial and self.serial.is_open:
-            self.serial.close()
 
 def create_connection():
     global cli_port, touch_port
-    with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-    cli_port = config['cli_port']
-    touch_port = config['touch_port']
-    # import device_simulate
-    # using = device_simulate.Using
-    # cli_port = device_simulate.CliDevice()
-    # touch_port = device_simulate.TouchDevice()
-
-def get_hardware_basic_info():
-    with using(cli_port) as port:
-        port.write(b'?\n')
-        response = [i.decode().strip() for i in port.readlines()[:8]]
-        basic_info = [i for i in response if "SN" in i]
-    try:
-        basic_info += [i for i in response if "Built" in i]
-    except IndexError:
-        pass
-    # basic_info = basic_info + f"\nCli: {cli_port}; Touch: {touch_port}"
-    basic_info += [get_brightness_level()]
-    basic_info += [get_sensor_sense_adjust(index='g')]
-    hid_stat = get_hid_mode()
-    basic_info += [hid_stat + ("(Button is stuck, force using io4)" if hid_stat[-1] == "!" else "")]
-    basic_info += [get_aime_info()]
-
-    return basic_info
-
-def get_sensor_raw_readings():
-    with using(cli_port) as port:
-        port.write(b'raw\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        raw_info = []
-
-    for area in sensor_area:
-        for readings in response:
-            if area in readings: raw_info = raw_info + [i.strip() for i in readings.split("|")[1:-1]]
-
-    return raw_info
-
-def get_sensor_sense_adjust(index=None):
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[Sense]")+1:response.index("[Sense]")+10]
-        sense_adjust_info = []
-    for line in response:
-        if index == "g" and "global" in line:
-            global_adjust = re.sub("[^\\+\\-0-9]", "", line)
-            if global_adjust == "+0": global_adjust = "0"
-            return global_adjust
-        for area in sensor_area:
-            if area in line:
-                sense_adjust_info = sense_adjust_info + [i.strip() for i in line.split("|")[1:-1]]
-    for i, adjust in enumerate(sense_adjust_info):
-        if adjust != "0":
-            sense_adjust_info[i] = f"+{sense_adjust_info[i]}" if len(sense_adjust_info[i]) == 1 else f"-{256-int(sense_adjust_info[i])}"
-        else:
-            sense_adjust_info[i] = "0"
-    if index is None:
-        return sense_adjust_info
-    else:
-        return sense_adjust_info[index]
-
-def combine_raw_and_sense_adjust(raw, adjust):
-    result = raw
-    for i, adjust in enumerate(adjust):
-        if adjust != "0": result[i] = f"{result[i]}({adjust})"
-
-    return result
-
-def adjust_sense_reset(area):
-    with using(cli_port) as port:
-        if area == "g":
-            port.write(b'sense 0\n')
-        else:
-            port.write(f'sense {area} 0\n'.encode())
-        port.readlines()
-
-def adjust_sense(area, value):
-    stat = "+" if value > 0 else "-"
-    for _ in range(abs(value)):
-        if area == "g":
-            with using(cli_port) as port: port.write(f'sense {stat}\n'.encode())
-        else:
-            with using(cli_port) as port: port.write(f'sense {area} {stat}\n'.encode())
-    with using(cli_port) as port: port.readlines()
-
-def get_hid_off_mode_availability():
-    with using(cli_port) as port:
-        port.write(b'hid\n')
-        response = [i.decode().strip() for i in port.readlines()]
-    if "off" in response[1]:
-        return 1
-    else:
-        return 0
-
-def get_hid_mode(ignore_stuck=None):
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[HID]")+1:response.index("[HID]")+3]
-    if "joy: on" in response[0].lower() or "io4: on" in response[0].lower():
-        stat = "io4"
-    else:
-        stat = response[0][response[0].index("NKRO")+6:]
-    if not ignore_stuck and response[1].startswith("!!!"):
-        stat += "!"
-    return stat
-
-def get_naming_joy():
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[HID]")+1:response.index("[HID]")+2]
-        if "Joy" in response[0]:
-            return True
-        else:
-            return False
-
-def adjust_hid_mode(mode):
-    if mode == "io4" and get_naming_joy():
-        mode = "joy"
-    with using(cli_port) as port:
-        port.write(f'hid {mode}\n'.encode())
-        port.readlines()
-
-def get_aime_info(more=None):
-    with using(cli_port) as port:
-        port.write(b'aime\n')
-        response = [i.decode().strip() for i in port.readlines()]
-    if response[1] == "Unknown command.":
-        return "Unsupported"
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[AIME]")+1:response.index("[AIME]")+4]
-    if not more:
-        return response[0].replace('NFC Module: ','')
-    else:
-        return (
-            response[1].replace('Virtual AIC: ',''),
-            response[2].replace('Protocol Mode: ','')
-        )
-
-def adjust_aime_virtual_aic(value):
-    with using(cli_port) as port:
-        port.write(f'aime virtual {value.lower()}\n'.encode())
-        port.readlines()
-
-def adjust_aime_protocol_mode(value):
-    with using(cli_port) as port:
-        port.write(f'aime mode {value}\n'.encode())
-        port.readlines()
-
-def get_brightness_level():
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[RGB]")+3].replace("Level: ", "")
-    return response
-
-def adjust_brightness_level(value):
-    with using(cli_port) as port:
-        port.write(f'level {value}\n'.encode())
-        port.readlines()
-
-def factory_reset():
-    with using(cli_port) as port:
-        port.write(b'factory\n')
-        port.readlines()
-
-def get_gpio_info(aux=None):
-    with using(cli_port) as port:
-        port.write(b'gpio\n')
-        response = [i.decode().strip() for i in port.readlines()]
-    if response[1] == "Unknown command.":
-        return "Unsupported"
-    with using(cli_port) as port:
-        port.write(b'display\n')
-        response = [i.decode().strip() for i in port.readlines()]
-        response = response[response.index("[GPIO]")+1:response.index("[GPIO]")+3]
-    if not aux:
-        response = response[0].split()
-    else:
-        response = response[1].split()
-    for i, j in enumerate(response):
-        response[i] = j[j.index(":")+1:]
-    return response
-
-def adjust_gpio_buttons(type, definition):
-    with using(cli_port) as port:
-        if type == "main":
-            port.write(f'gpio main {definition}\n'.encode())
-        elif type == "aux":
-            port.write(f'gpio {definition}\n'.encode())
-
-def gpio_reset():
-    with using(cli_port) as port:
-        port.write(b'gpio reset\n')
-        port.readlines()
-
-# Thanks to @CVSJason(Github) for the reference on touch port communication implementation
-def init_sensor_touch():
-    with using(touch_port) as port:
-        port.write(b'{RSET}')
-        port.write(b'{HALT}')
-        port.write(b'{LAr2}')
-        for area in range(0x41+0x01, 0x62+0x01):
-            port.write(b'{L' + bytes([area]) + b'r2}')
-        for area in range(0x41, 0x62+0x01):
-            port.write(b'{L' + bytes([area]) + b'k'+ bytes([0x28]) + b'}')
-        port.write(b'{STAT}')
-
-        response = []
-        for _ in range(90):
-            response.append(port.read())
-            if len(response) == 9 and response[0] == b'(' and response[-1] == b')':
-                return 1
-            elif len(response) > 9 and response[0] != b'(' and response[-1] != b')':
-                del response[0]
-    return 0
-
-def get_sensor_touch():
-    with using(touch_port) as port:
-        response = port.read(9)
-    if response == b'': return
-    results = []
-    for i in range(1, 9):
-        results.append(1 if response[i] & 0b1 != 0 else 0)
-        results.append(1 if response[i] & 0b10 != 0 else 0)
-        results.append(1 if response[i] & 0b100 != 0 else 0)
-        results.append(1 if response[i] & 0b1000 != 0 else 0)
-        results.append(1 if response[i] & 0b10000 != 0 else 0)
-    return results[0:34]
-
-def stop_get_touch_info():
-    with using(touch_port) as port:
-        port.write(b'{RSET}')
-        port.write(b'{HALT}')
-    return
-
-def program_update():
-    stop_get_touch_info()
-    with using(cli_port) as port:
-        port.write(b'update\n')
-        try:
-            port.readlines()
-        except Exception:
-            pass
-    return
-
-if __name__ == "__main__":
-    create_connection()
+    cli_port = config_get("cli_port", "")
+    touch_port = config_get("touch_port", "")
+    connect(cli_port, touch_port)
