@@ -31,7 +31,7 @@ class MainUI:
         self._mode = "normal"
         self._fullscreen = False
         self._geometry_before_fullscreen = ""
-        self._last_bits = None
+        self._last_sensor_status = None
         self._pollers = []
         self._closed = False
         self._log_visible = False
@@ -50,7 +50,7 @@ class MainUI:
         self.canvas = self.sensor        # features call this name
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.root.after(PUMP_MS, self._pump)
+        self.root.after(10, self._pump)
         self.log.info("Ready.")
 
     # ---------- layout ----------
@@ -167,7 +167,7 @@ class MainUI:
             except Exception as exc:            # keep the pump alive
                 self.log.error(f"UI update failed: {exc}")
         if not self._closed:
-            self.root.after(PUMP_MS, self._pump)
+            self.root.after(10, self._pump)
 
     @staticmethod
     def _run(func, *args):
@@ -246,7 +246,7 @@ class MainUI:
         self.device_fields.clear()
         self.canvas.set_text(None)
         self.canvas.clear_touch()
-        self._last_bits = None
+        self._last_sensor_status = None
         self._set_enabled(False)
         self.log.info("Disconnected.")
 
@@ -270,37 +270,31 @@ class MainUI:
             if self._mode == "normal":
                 try:
                     raw = communication.cli.raw_readings()
-                    adjust = communication.cli.sense_adjust()
+                    adjust = communication.cli.sense_adjust() if show_sense_adjust else None
                 except communication.DeviceError as exc:
                     self.post(lambda error=str(exc): self._lost(error))
                     return
-                self.post(lambda readings=raw, values=adjust: self._show_readings(readings, values, show_sense_adjust))
+                # self.post(lambda readings=raw, values=adjust: self._show_readings(readings, values))
+                self._show_readings(raw, adjust)
             if interval <= 0:
                 return
-            self._running.wait(interval)
+            time.sleep(interval)
 
     def _touch_loop(self):
         while self._running.is_set():
-            try:
-                bits = communication.touch.read_touch()
-            except communication.DeviceError as exc:
-                self.post(lambda error=str(exc): self._lost(error))
-                return
-            if bits:
-                self.post(lambda values=bits: self._show_touch(values))
-            self._running.wait(TOUCH_INTERVAL)
+            sensor_status = communication.touch.read_touch()
+            if sensor_status:
+                self._show_touch(sensor_status)
+            # time.sleep(0.01)
 
-    def _show_readings(self, readings, adjust, show_adjust):
-        image = draw.readings_image(
-            readings, adjust, show_adjust
-        )
-        self.canvas.set_text(image)
+    def _show_readings(self, readings: list[str], adjust: list[str] | None):
+        self.canvas.set_text(draw.readings_image(readings, adjust))
 
-    def _show_touch(self, bits):
-        if bits == self._last_bits:
+    def _show_touch(self, status: list[str]):
+        if status == self._last_sensor_status:
             return
-        self._last_bits = bits
-        self.canvas.set_touch(draw.touch_image(bits))
+        self._last_sensor_status = status
+        self.canvas.set_touch(draw.touch_image(status))
 
     def _lost(self, message):
         self._stop_pollers()
@@ -329,7 +323,7 @@ class MainUI:
             return
         self._mode = "feature"
         self.canvas.clear_touch()
-        self._last_bits = None
+        self._last_sensor_status = None
         self.log.info(f"{name} opened.")
         for key in ("Left", "Right", "Up", "Down", "Return", "Insert", "End",
                     "BackSpace", "Backspace"):
@@ -437,7 +431,7 @@ class MainUI:
             return
         self._mode = "feature"
         self.canvas.clear_touch()
-        self._last_bits = None
+        self._last_sensor_status = None
         self.log.info(f"{name} opened.")
         for key in ("Left", "Right", "Up", "Down", "Return", "Insert", "End",
                     "BackSpace", "Backspace"):
