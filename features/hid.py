@@ -4,11 +4,12 @@ from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_a
 from preset_var import feat_hid_text
 from communication import adjust_hid_mode, get_hid_mode, get_hid_off_mode_availability
 
-hid_off_mode = get_hid_off_mode_availability()
+hid_off_mode = 0
 
 def main(instance):
-    global _inst
+    global _inst, hid_off_mode
     _inst = instance
+    hid_off_mode = get_hid_off_mode_availability()
 
     global prompt_image
     prompt_image = Image.new("RGBA", (1080,1080))

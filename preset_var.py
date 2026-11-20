@@ -131,14 +131,6 @@ connect_stat = {
     3: "",
 }
 
-buttons = {
-    "Sensitivity": 'features.sense',
-    "LED brightness": 'features.level',
-    "Aime": 'features.aime',
-    "GPIO definition": 'features.gpio',
-    "HID mode": 'features.hid'
-}
-
 message_box_prompts = {
     "Denied": ("Error", "Unable to connect to the port, make sure it is not in use."),
     "Communicate_failed": ("Error", "Failed to communicate to the touch port after trying 3 times"),

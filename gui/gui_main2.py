@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import os
 import queue
 import sys
@@ -14,9 +13,10 @@ from PIL import Image
 import communication
 import draw2 as draw
 import preset_var
+from features import buttons, system_buttons
 from gui.dialogs import PortDialog
 from gui.widgets import Card, FieldList, LogPanel, SensorView, StatusPill
-from preset_var import BASIC_INFO_LABEL, IMAGES_DIR, PORT_LABELS, buttons, CONFIG_FILE
+from preset_var import BASIC_INFO_LABEL, IMAGES_DIR, PORT_LABELS, CONFIG_FILE
 
 PUMP_MS = 20
 TOUCH_INTERVAL = 0.01
@@ -114,13 +114,10 @@ class MainUI:
         system.grid(row=1, column=0, sticky="w", pady=(10, 0))
         self._system_buttons = [
             tb.Button(
-                system, text="Update firmware", bootstyle="secondary-outline",
-                state="disabled", command=self.execute_feature,
-            ),
-            tb.Button(
-                system, text="Factory reset", bootstyle="secondary-outline",
-                state="disabled", command=self.execute_feature,
+                system, text=name, bootstyle="secondary-outline",
+                state="disabled", command=lambda n=name: self.execute_feature(n),
             )
+            for name in system_buttons
         ]
         for i in self._system_buttons:
             i.pack(side="left", padx=(0, 8))
@@ -132,10 +129,10 @@ class MainUI:
         actions = tb.Frame(self.root, padding=(16, 4))
         actions.grid(row=2, column=0, sticky="ew")
         self._action_buttons = {}
-        for b in buttons.keys():
+        for b in buttons:
             self._action_buttons[b] = tb.Button(
                 actions, text=b, state="disabled",
-                command=lambda: buttons[b](self),
+                command=lambda n=b: self.execute_feature(n),
             )
         for i, name in enumerate(self._action_buttons):
             self._action_buttons[name].grid(row=0, column=i, sticky="ew", padx=(6, 0))
@@ -313,8 +310,8 @@ class MainUI:
 
     # ---------- feature screens ----------
     def execute_feature(self, name):
-        module_path = buttons.get(name)
-        if not module_path or not self._connected:
+        action = buttons.get(name) or system_buttons.get(name)
+        if action is None or not self._connected:
             return
         self._mode = "feature"
         self.canvas.clear_touch()
@@ -324,13 +321,7 @@ class MainUI:
                     "BackSpace", "Backspace"):
             self.root.unbind(f"<KeyPress-{key}>")
         self.root.bind("<KeyPress-Escape>", lambda _event: self.done_command("esc"))
-        try:
-            module = importlib.import_module(module_path)
-        except Exception as exc:
-            self.log.error(f"Cannot open {name}: {exc}")
-            self.done_command("esc")
-            return
-        module.main(self)
+        action(self)
 
     def done_command(self, command="esc"):
         self._mode = "normal"
@@ -415,31 +406,6 @@ class MainUI:
 
     def led_test_btn_clicked(self):
         self.not_implemented("led test")
-    
-    
-    def action_button_clicked(self, action_name):
-        # self.execute_feature("Sensitivity")
-        buttons[action_name]()
-
-        module_path = buttons.get(name)
-        if not module_path or not self._connected:
-            return
-        self._mode = "feature"
-        self.canvas.clear_touch()
-        self._last_sensor_status = None
-        self.log.info(f"{name} opened.")
-        for key in ("Left", "Right", "Up", "Down", "Return", "Insert", "End",
-                    "BackSpace", "Backspace"):
-            self.root.unbind(f"<KeyPress-{key}>")
-        self.root.bind("<KeyPress-Escape>", lambda _event: self.done_command("esc"))
-        try:
-            module = importlib.import_module(module_path)
-        except Exception as exc:
-            self.log.error(f"Cannot open {name}: {exc}")
-            self.done_command("esc")
-            return
-        module.main(self)
-
 
     # ---------- ports ----------
     def open_port_dialog(self):
