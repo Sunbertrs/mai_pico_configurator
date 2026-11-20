@@ -30,6 +30,9 @@ for _area in SENSOR_INFO:
     AREA_TOUCH_LAYER.append(_layer)
     _rotate_angle = _rotate_angle - 45 if _area[0] != "C" else _rotate_angle - 180
 
+# opaque area of each rotated layer, used to crop them into small canvas items
+AREA_TOUCH_BBOX = [layer.getbbox() for layer in AREA_TOUCH_LAYER]
+
 
 def readings_image(readings: list[str], adjust: list[str] | None) -> Image.Image:
     """

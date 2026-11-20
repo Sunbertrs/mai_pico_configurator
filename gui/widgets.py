@@ -8,6 +8,9 @@ import tkinter as tk
 import ttkbootstrap as tb
 from PIL import Image, ImageTk
 
+from preset_var import SENSOR_INFO
+import draw2 as draw
+
 
 class Card(tb.Labelframe):
     """
@@ -134,22 +137,24 @@ class SensorView(tb.Frame):
         super().__init__(parent)
         self._canvas = tb.Canvas(self)
         self._canvas.pack(fill="both", expand=True)
-        self._layers: dict[Image.Image, Image.Image, Image.Image] = {"base": base_image, "touch": None, "text": None}
-        self._photoimage = {"touch": None, "text": None}
+        self._layers = {"base": base_image, "text": None}
+        self._photoimage = {"base": None, "text": None}
+        self._active_list = None
         self._size = 0
         self._job = None
         self._canvas.bind("<Configure>", self._on_configure)
 
     # ---------- public ----------
-    def set_text(self, image) -> None:
+    def set_text(self, image: Image.Image) -> None:
         self._layers["text"] = image
-        # self._redraw("text")
         self._draw("text")
 
-    def set_touch(self, image) -> None:
-        self._layers["touch"] = image
-        # self._redraw("touch")
-        self._draw("touch")
+    def set_touch(self, active_list: list[int]) -> None:
+        if active_list is None:
+            return
+        self._active_list = active_list
+        for index, sensor in enumerate(SENSOR_INFO):
+            self._canvas.itemconfigure(sensor, state="normal" if active_list[index] else "hidden")
 
     def clear_touch(self) -> None:
         self.set_touch(None)
@@ -162,23 +167,63 @@ class SensorView(tb.Frame):
         self._job = self.after(10, self._rescale)
 
     def _rescale(self) -> None:
-        self._size = min(self._canvas.winfo_width(), self._canvas.winfo_height())
-        for tag in self._layers.keys():
-            self._draw(tag)
+        self._job = None
+        size = min(self._canvas.winfo_width(), self._canvas.winfo_height())
+        self._size = size
+        self._draw("base")
+        self._build_touch_area_layers()
+        self._draw("text")
 
     def _draw(self, tag: str) -> None:
-        self._canvas.delete(tag)
-        self._photoimage[tag] = None
-        if self._layers[tag] is None:
+        items = self._canvas.find_withtag(tag)
+        image = self._layers.get(tag)
+
+        if image is None or not self._size:
+            for item in items:
+                self._canvas.itemconfigure(item, state="hidden")
             return
-        scaled = self._layers[tag].resize((self._size, self._size))
-        self._photoimage[tag] = ImageTk.PhotoImage(scaled)
-        self._canvas.create_image(
-            self._canvas.winfo_width() / 2,                          # centred
-            self._canvas.winfo_height()  - self._size / 2,   # pinned to the bottom
-            image=self._photoimage[tag],
-            tags=tag,
+
+        self._photoimage[tag] = ImageTk.PhotoImage(
+            image.resize((self._size, self._size), Image.BILINEAR)
         )
-        # keep the stacking order: base, touch, text
-        self._canvas.tag_raise("touch")
+        x = self._canvas.winfo_width() / 2                # centred
+        y = self._canvas.winfo_height() - self._size / 2  # pinned to the bottom
+
+        if items:
+            self._canvas.coords(items[0], x, y)
+            self._canvas.itemconfigure(
+                items[0], image=self._photoimage[tag], state="normal"
+            )
+        else:
+            self._canvas.create_image(x, y, image=self._photoimage[tag], tags=tag)
+
         self._canvas.tag_raise("text")
+
+    def _build_touch_area_layers(self) -> None:
+        """
+        Rebuild the 34 cropped highlight items for the current size.
+        """
+        self._canvas.delete("touch")
+        scale = self._size / draw.CANVAS_SIZE
+        space_from_left = (self._canvas.winfo_width() - self._size) / 2
+        space_from_top = self._canvas.winfo_height() - self._size
+
+        for index, sensor in enumerate(SENSOR_INFO):
+            box = draw.AREA_TOUCH_BBOX[index]
+            x0, y0, x1, y1 = box
+            self._photoimage[sensor] = ImageTk.PhotoImage(
+                draw.AREA_TOUCH_LAYER[index].crop(box).resize(
+                    (int((x1 - x0) * scale), int((y1 - y0) * scale)),
+                    Image.BILINEAR,
+                )
+            )
+            self._canvas.create_image(
+                space_from_left + (x0 + x1) / 2 * scale,
+                space_from_top + (y0 + y1) / 2 * scale,
+                image=self._photoimage[sensor],
+                state="hidden",
+                tags=("touch", sensor),
+            )
+
+        self._canvas.tag_raise("text")
+        self.set_touch(self._active_list)

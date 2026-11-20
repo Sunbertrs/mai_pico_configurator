@@ -289,7 +289,7 @@ class MainUI:
         if status == self._last_sensor_status:
             return
         self._last_sensor_status = status
-        self.canvas.set_touch(draw.touch_image(status))
+        self.canvas.set_touch(status)# draw.touch_image(status)
 
     def _lost(self, message):
         self._stop_pollers()
