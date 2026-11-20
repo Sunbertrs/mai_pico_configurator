@@ -32,11 +32,9 @@ class MainUI:
         self._fullscreen = False
         self._geometry_before_fullscreen = ""
         self._last_sensor_status = None
-        self._pollers = []
         self._closed = False
         self._log_visible = False
         self._log_job = None
-        self._log_rely = 0.0
 
         # kept for the feature screens that still toggle these names
         self.stop_draw_text = 0
@@ -255,13 +253,10 @@ class MainUI:
         self._stop_pollers()
         self._running.set()
         for target in (self._readings_loop, self._touch_loop):
-            thread = threading.Thread(target=target, daemon=True)
-            thread.start()
-            self._pollers.append(thread)
+            threading.Thread(target=target, daemon=True).start()
 
     def _stop_pollers(self):
         self._running.clear()
-        self._pollers.clear()
 
     def _readings_loop(self):
         interval = CONFIG_FILE.get("raw_readings_interval_time") or 0
@@ -290,7 +285,7 @@ class MainUI:
     def _show_readings(self, readings: list[str], adjust: list[str] | None):
         self.canvas.set_text(draw.readings_image(readings, adjust))
 
-    def _show_touch(self, status: list[str]):
+    def _show_touch(self, status: list[int]):
         if status == self._last_sensor_status:
             return
         self._last_sensor_status = status

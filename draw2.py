@@ -23,7 +23,7 @@ from preset_var import (
 
 CANVAS_SIZE = 1080
 
-AREA_TOUCH_LAYER = []
+AREA_TOUCH_LAYER: list[Image.Image] = []
 _rotate_angle = 0
 for _area in SENSOR_INFO:
     _layer = Image.open(os.path.join(IMAGES_DIR, f"hilight{_area[0]}.png")).rotate(_rotate_angle)
