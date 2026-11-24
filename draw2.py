@@ -88,4 +88,4 @@ def resize_and_display(instance, image):
     """
     Hand a freshly drawn page to the sensor view; it does the scaling.
     """
-    instance.canvas_handler.set_text(image)
+    instance.sensor_canvas.set_text(image)

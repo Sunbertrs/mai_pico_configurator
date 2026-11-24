@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw
 
-from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
+from draw2 import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
 from preset_var import feat_hid_text
 from communication import adjust_hid_mode, get_hid_mode, get_hid_off_mode_availability
 

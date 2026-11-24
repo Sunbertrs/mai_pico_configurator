@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 from tkinter import messagebox
 
 from communication import get_gpio_info, get_hid_mode, gpio_reset, adjust_gpio_buttons
-from draw import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
+from draw2 import draw_title_and_prompting_keys, draw_selecting_options, resize_and_display
 from preset_var import feat_gpio_text, CANVAS_FONT_SET, message_box_prompts, area_title_position, area_subtitl_position, \
     GPIO_DEFAULT_DEFINITION, NKRO_KEY, GPIO_AUX_SEQUENCE
 

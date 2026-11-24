@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0, sys.path[0].replace("features",""))
 from PIL import Image, ImageDraw
 
-from draw import draw_title_and_prompting_keys, resize_and_display
+from draw2 import draw_title_and_prompting_keys, resize_and_display
 from preset_var import CANVAS_FONT_SET, SENSOR_INFO, feat_sense_text
 from communication import get_sensor_sense_adjust, adjust_sense_reset, adjust_sense
 

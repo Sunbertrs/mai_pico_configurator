@@ -35,6 +35,7 @@ class MainUI:
         self._closed = False
         self._log_visible = False
         self._log_job = None
+        self.sensor_canvas = None
 
         # kept for the feature screens that still toggle these names
         self.stop_draw_text = 0
@@ -44,8 +45,6 @@ class MainUI:
         self._build_info()
         self._build_actions()
         self._build_sensor()
-
-        self.canvas = self.sensor        # features call this name
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.root.after(10, self._pump)
@@ -142,8 +141,8 @@ class MainUI:
         base = Image.open(os.path.join(IMAGES_DIR, "sensor.png")).convert("RGBA")
         self.root.rowconfigure(3, weight=1)
         self.root.columnconfigure(0, weight=1)
-        self.sensor = SensorView(self.root, base)
-        self.sensor.grid(row=3, column=0, sticky="nsew")
+        self.sensor_canvas = SensorView(self.root, base)
+        self.sensor_canvas.grid(row=3, column=0, sticky="nsew")
 
     # ---------- cross thread plumbing ----------
     def post(self, callback):
@@ -239,8 +238,8 @@ class MainUI:
         self.connect_btn.configure(text="Connect", state="normal")
         self.ports_fields.clear()
         self.device_fields.clear()
-        self.canvas.set_text(None)
-        self.canvas.clear_touch()
+        self.sensor_canvas.set_text(None)
+        self.sensor_canvas.clear_touch()
         self._last_sensor_status = None
         self._set_enabled(False)
         self.log.info("Disconnected.")
@@ -280,13 +279,13 @@ class MainUI:
             # time.sleep(0.01)
 
     def _show_readings(self, readings: list[str], adjust: list[str] | None):
-        self.canvas.set_text(draw.readings_image(readings, adjust))
+        self.sensor_canvas.set_text(draw.readings_image(readings, adjust))
 
     def _show_touch(self, status: list[int]):
         if status == self._last_sensor_status:
             return
         self._last_sensor_status = status
-        self.canvas.set_touch(status)# draw.touch_image(status)
+        self.sensor_canvas.set_touch(status)# draw.touch_image(status)
 
     def _lost(self, message):
         self._stop_pollers()
@@ -314,7 +313,7 @@ class MainUI:
         if action is None or not self._connected:
             return
         self._mode = "feature"
-        self.canvas.clear_touch()
+        self.sensor_canvas.clear_touch()
         self._last_sensor_status = None
         self.log.info(f"{name} opened.")
         for key in ("Left", "Right", "Up", "Down", "Return", "Insert", "End",
