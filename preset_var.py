@@ -122,7 +122,7 @@ button_stat = (
 
 PORT_LABELS = ("Command line","Touch","LED","Aime")
 
-BASIC_INFO_LABEL = ("Basic info","SN","Built","Brightness level","Global sensitivity","HID mode","NFC module")
+BASIC_INFO_LABEL = ("SN","Built","Brightness level","Global sensitivity","HID mode","NFC module")
 
 connect_stat = {
     0: "Click the connect button to start.",
