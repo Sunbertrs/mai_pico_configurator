@@ -8,7 +8,8 @@ import tkinter as tk
 import ttkbootstrap as tb
 from PIL import Image, ImageTk
 
-from preset_var import SENSOR_INFO
+from preset_var import BASIC_INFO_LABEL, SENSOR_INFO
+import communication
 import draw2 as draw
 
 
@@ -29,13 +30,14 @@ class FieldList(tb.Frame):
     def __init__(self, parent, fields):
         super().__init__(parent)
         self._values = {}
+        self._widgets = {}
         for row, name in enumerate(fields):
-            tb.Label(self, text=name).grid(row=row, column=0, sticky="w", pady=3)
+            tb.Label(self, text=name).grid(row=row, column=0, sticky="w", pady=9)
             value = tk.StringVar(value="—")
-            tb.Label(self, textvariable=value, bootstyle="secondary").grid(
-                row=row, column=1, sticky="w", padx=(16, 0), pady=3
-            )
+            widget = tb.Label(self, textvariable=value, bootstyle="secondary")
+            widget.grid(row=row, column=1, sticky="w", padx=(16, 0))
             self._values[name] = value
+            self._widgets[name] = widget
         self.columnconfigure(1, weight=1)
 
     def set(self, values: dict) -> None:
@@ -46,6 +48,118 @@ class FieldList(tb.Frame):
     def clear(self) -> None:
         for value in self._values.values():
             value.set("—")
+
+    def widget(self, name):
+        return self._widgets.get(name)
+
+    def value(self, name) -> str:
+        return self._values[name].get() if name in self._values else ""
+
+
+class DeviceInfoList(tb.Frame):
+    """
+    The device values: three read only rows plus the three controls that talk
+    to the port directly.
+    """
+
+    def __init__(self, parent, log):
+        super().__init__(parent)
+        self._log = log
+        self._widgets = {} # {"name": (widget, widget...), ...}
+        self._communication_instance = None
+
+        for row, name in enumerate(BASIC_INFO_LABEL):
+            tb.Label(self, text=name).grid(row=row, column=0, sticky="w", pady=9)
+            if name == "Brightness level":
+                self._widgets[name] = (
+                    tb.Scale(self, from_=0, to=255, length=160, state="disabled"),
+                    tb.Label(self, text="", bootstyle="secondary", width=3),
+                )
+                self._widgets[name][0].bind("<ButtonRelease-1>", self._brightness_changed)
+            elif name =="Global sensitivity":
+                self._widgets[name] = (
+                    tb.Spinbox(self, from_=-9, to=9, increment=1, width=5, state="disabled", command=self._sensitivity_changed),
+                )
+                self._widgets[name][0].bind("<Return>", self._sensitivity_changed)
+            elif name == "HID mode":
+                self._widgets[name] = (
+                    tb.Combobox(self, values=("io4", "key1", "key2"), state="disabled", width=10), # values will be updated after connected
+                )
+                self._widgets[name][0].bind("<<ComboboxSelected>>", self._hid_changed)
+            else:
+                self._widgets[name] = (
+                    tb.Label(self, text="—", bootstyle="secondary"),
+                )
+            for index, widget in enumerate(self._widgets[name]):
+                widget.grid(row=row, column=1+index, sticky="w", padx=(16, 0))
+
+        self.columnconfigure(1, weight=1)
+
+    # ---------- public ----------
+    def set(self, info: dict) -> None:
+        for name in info.keys():
+            if name == "Brightness level":
+                self._widgets[name][0].set(int(info.get(name)))
+                self._widgets[name][1].configure(text=info.get(name))
+            elif name == "Global sensitivity":
+                self._widgets[name][0].set(info.get("Global sensitivity"))
+            elif name == "HID mode":
+                self._widgets[name][0].set(info.get(name))
+            else:
+                self._widgets[name][0].configure(text=info.get(name))
+
+    def clear(self) -> None:
+        for name in self._widgets.keys():
+            if name == "Brightness level":
+                self._widgets[name][0].set(0)
+                self._widgets[name][1].configure(text="—")
+            elif name == "Global sensitivity":
+                self._widgets[name][0].set("")
+            elif name == "HID mode":
+                self._widgets[name][0].set(0)
+            else:
+                self._widgets[name][0].configure(text="—")
+
+    def set_enabled(self, enabled: bool) -> None:
+        state = "normal" if enabled else "disabled"
+        # for name in ("Brightness level", "Global sensitivity", "HID mode"):
+        self._widgets["Brightness level"][0].configure(state=state)
+        self._widgets["Global sensitivity"][0].configure(state=state)
+        self._widgets["HID mode"][0].configure(state="readonly" if enabled else "disabled")
+
+    def set_com_instance(self, com_inst):
+        self._communication_instance = com_inst
+
+    # ---------- change handlers ----------
+    def _hid_changed(self, _event=None) -> None:
+        try:
+            self._communication_instance.cli.set_hid_mode(self._widgets["HID mode"][0].get())
+            self._log.info(f"HID mode: set to {self._widgets["HID mode"][0].get()}")
+        except communication.DeviceError as exc:
+            self._log.warn(f"HID mode: {exc}")
+
+    def _brightness_changed(self, _event=None) -> None:
+        try:
+            self._communication_instance.cli.set_brightness(int(self._widgets["Brightness level"][0].get()))
+            self._widgets["Brightness level"][1].configure(text=f"{self._widgets["Brightness level"][0].get():.0f}")
+            self._log.info(f"Brightness level: set to {self._widgets["Brightness level"][0].get():.0f}")
+        except communication.DeviceError as exc:
+            self._log.warn(f"Brightness: {exc}")
+
+    def _sensitivity_changed(self, _event=None) -> None:
+        value = int(self._widgets["Global sensitivity"][0].get())
+        try:
+            self._communication_instance.cli.sense_reset("g")
+            self._communication_instance.cli.adjust_sense("g", value)
+            self._log.info(f"Global sensitivity: set to {value}")
+        except communication.DeviceError as exc:
+            self._log.warn(f"Sensitivity: {exc}")
+
+    def _sensitivity_value(self) -> int:
+        try:
+            return max(-9, min(9, int(self._widgets["Global sensitivity"][0].get())))
+        except (TypeError, ValueError):
+            return 0
 
 
 class StatusPill(tb.Label):

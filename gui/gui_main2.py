@@ -15,8 +15,8 @@ import draw2 as draw
 import preset_var
 from features import buttons, system_buttons
 from gui.dialogs import PortDialog
-from gui.widgets import Card, FieldList, LogPanel, SensorView, StatusPill
-from preset_var import BASIC_INFO_LABEL, IMAGES_DIR, PORT_LABELS, CONFIG_FILE
+from gui.widgets import Card, FieldList, DeviceInfoList, LogPanel, SensorView, StatusPill
+from preset_var import IMAGES_DIR, PORT_LABELS, CONFIG_FILE
 
 PUMP_MS = 20
 TOUCH_INTERVAL = 0.01
@@ -78,11 +78,12 @@ class MainUI:
         self.full_btn.grid(row=0, column=4, sticky="e")
 
     def _build_info(self):
-        colors = self.root.style.colors
         self.info = tb.Frame(self.root, padding=(16, 8))
         self.info.grid(row=1, column=0, sticky="ew")
         self.info.columnconfigure(0, weight=1, uniform="info")
         self.info.columnconfigure(1, weight=1, uniform="info")
+
+        self.log = LogPanel(self.info, self.root.style.colors)
 
         left = Card(self.info, "Connection")
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
@@ -106,7 +107,7 @@ class MainUI:
 
         right = Card(self.info, "Device")
         right.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
-        self.device_fields = FieldList(right, BASIC_INFO_LABEL)
+        self.device_fields = DeviceInfoList(right, self.log)
         self.device_fields.grid(row=0, column=0, sticky="ew")
 
         system = tb.Frame(right)
@@ -120,9 +121,6 @@ class MainUI:
         ]
         for i in self._system_buttons:
             i.pack(side="left", padx=(0, 8))
-
-        # the log floats above the info cards until the Log button toggles it
-        self.log = LogPanel(self.info, colors)
 
     def _build_actions(self):
         actions = tb.Frame(self.root, padding=(16, 4))
@@ -186,8 +184,8 @@ class MainUI:
             self.connect()
 
     def connect(self):
-        cli_port = (CONFIG_FILE.get("cli_port") or "").strip()
-        touch_port = (CONFIG_FILE.get("touch_port") or "").strip()
+        cli_port = CONFIG_FILE.get("cli_port")
+        touch_port = CONFIG_FILE.get("touch_port")
         if not cli_port or not touch_port:
             self.log.warn("No ports configured yet.")
             self.open_port_dialog()
@@ -218,9 +216,10 @@ class MainUI:
             "LED": CONFIG_FILE.get("led_port", ""),
             "Aime": CONFIG_FILE.get("aime_port", ""),
         })
-        self._show_device_info(info)
+        self._set_enabled(True)                 # before the values: a disabled
+        self._show_device_info(info)            # scale ignores set()
+        self.device_fields.set_com_instance(communication) # send current communication instance to use
         self.log.info(f"Connected to {cli_port} / {touch_port}.")
-        self._set_enabled(True)
         self._start_pollers()
 
     def _connect_failed(self, message):
@@ -262,11 +261,13 @@ class MainUI:
                 try:
                     raw = communication.cli.raw_readings()
                     adjust = communication.cli.sense_adjust() if show_sense_adjust else None
+                except communication.PortBusy:
+                    pass                # this round missed the queue; try the next one
                 except communication.DeviceError as exc:
                     self.post(lambda error=str(exc): self._lost(error))
                     return
-                # self.post(lambda readings=raw, values=adjust: self._show_readings(readings, values))
-                self._show_readings(raw, adjust)
+                else:
+                    self._show_readings(raw, adjust)
             if interval <= 0:
                 return
             time.sleep(interval)
@@ -298,14 +299,7 @@ class MainUI:
         self.log.error(f"Connection lost: {message}")
 
     def _show_device_info(self, info):
-        self.device_fields.set({
-            "SN": info.get("SN"),
-            "Built": info.get("Built"),
-            "Brightness": info.get("Brightness level"),
-            "Global sensitivity": info.get("Global sensitivity"),
-            "HID mode": info.get("HID mode"),
-            "NFC module": info.get("NFC module"),
-        })
+        self.device_fields.set(info)
 
     # ---------- feature screens ----------
     def execute_feature(self, name):
@@ -320,7 +314,11 @@ class MainUI:
                     "BackSpace", "Backspace"):
             self.root.unbind(f"<KeyPress-{key}>")
         self.root.bind("<KeyPress-Escape>", lambda _event: self.done_command("esc"))
-        action(self)
+        try:
+            action(self)
+        except communication.PortBusy:
+            self._mode = "normal"
+            self.log.warn(f"{name}: device is busy, please try again.")
 
     def done_command(self, command="esc"):
         self._mode = "normal"
@@ -423,5 +421,8 @@ class MainUI:
 
     def _set_enabled(self, enabled):
         state = "normal" if enabled else "disabled"
-        for button in list(self._action_buttons.values()) + self._system_buttons:
+        for button in self._action_buttons.values():
             button.configure(state=state)
+        for button in self._system_buttons:
+            button.configure(state=state)
+        self.device_fields.set_enabled(enabled)
