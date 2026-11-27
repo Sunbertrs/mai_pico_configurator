@@ -1,12 +1,12 @@
 """
-Each port is a separate object with its own connection and its own lock, so the
-background pollers and the UI never fight over one device. Every public method
-takes that lock, which keeps a multi-command sequence such as adjusting the
-sensitivity atomic.
+The command port is driven by a single worker thread: callers hand it a request
+and wait for the answer, so two threads can never interleave on the wire.
+The touch port keeps a lock of its own, since its frames are polled directly.
 """
 
 from __future__ import annotations
 
+import queue
 import re
 import threading
 import time
@@ -22,6 +22,10 @@ TOUCH_FRAME = 9
 
 class DeviceError(RuntimeError):
     """A serial operation could not be completed."""
+
+
+class PortBusy(DeviceError):
+    """The request did not finish in time; the caller may retry."""
 
 
 class SerialPort:
@@ -78,23 +82,110 @@ class SerialPort:
         return self._serial
 
 
+class _Request:
+    """
+    One queued command and the slot its answer lands in.
+    """
+
+    __slots__ = ("command", "event", "lines", "error", "cancelled")
+
+    def __init__(self, command: str):
+        self.command = command
+        self.event = threading.Event()
+        self.lines: list[str] = []
+        self.error: DeviceError | None = None
+        self.cancelled = False
+
+
 class CliPort(SerialPort):
+    """
+    The command console, served by one worker thread.
+
+    Callers enqueue a request and wait on its event, so the port has exactly one
+    reader at a time and there is no lock that can time out as "busy".
+    """
+
     def __init__(self):
         super().__init__("command port")
+        self._queue: queue.Queue = queue.Queue()
+        self._stop = threading.Event()
+        self._worker: threading.Thread | None = None
+
+    # ---------- lifecycle ----------
+    def open(self, port_name: str) -> None:
+        self.close()
+        try:
+            self._serial = serial.Serial(port_name, timeout=0.02)
+        except (serial.SerialException, OSError) as exc:
+            raise DeviceError(f"cannot open {port_name} ({self.label}): {exc}") from exc
+        self.port_name = port_name
+        self._queue = queue.Queue()
+        self._stop = threading.Event()
+        self._worker = threading.Thread(
+            target=self._serve, args=(self._queue, self._stop), daemon=True
+        )
+        self._worker.start()
+
+    def close(self) -> None:
+        worker, self._worker = self._worker, None
+        stop, self._stop = self._stop, None
+        if stop is not None:
+            stop.set()
+        if worker is not None:
+            self._queue.put(None)          # wake the worker out of get()
+        self._close_serial()               # unblocks a read in progress
+        if worker is not None and worker.is_alive():
+            worker.join(0.5)
+
+    def _close_serial(self) -> None:
+        if self._serial is not None:
+            try:
+                self._serial.close()
+            except (serial.SerialException, OSError):
+                pass
+            self._serial = None
+
+    # ---------- worker ----------
+    def _serve(self, requests: queue.Queue, stop: threading.Event) -> None:
+        while not stop.is_set():
+            request = requests.get()
+            if request is None:
+                return
+            if request.cancelled:
+                request.event.set()
+                continue
+            try:
+                request.lines = self._exchange(request.command)
+            except DeviceError as exc:
+                request.error = exc
+            request.event.set()
+
+    def _exchange(self, command: str) -> list[str]:
+        port = self._serial
+        if port is None or not port.is_open:
+            raise DeviceError(f"{self.label} is not open")
+        try:
+            port.reset_input_buffer()
+            port.write(command.encode())
+        except (serial.SerialException, OSError) as exc:
+            raise DeviceError(f"write failed: {exc}") from exc
+        return self._read_lines(port)
 
     # ---------- low level ----------
-    def submit(self, command: str) -> list[str]:
+    def submit(self, command: str, timeout: float = 5.0) -> list[str]:
         """
-        Send one command and return the reply lines.
+        Send one command and wait for the reply lines.
         """
-        with self.exclusive():
-            port = self._require_port()
-            try:
-                port.reset_input_buffer()
-                port.write(command.encode())
-            except (serial.SerialException, OSError) as exc:
-                raise DeviceError(f"write failed: {exc}") from exc
-            return self._read_lines(port)
+        if self._worker is None:
+            raise DeviceError(f"{self.label} is not open")
+        request = _Request(command)
+        self._queue.put(request)
+        if not request.event.wait(timeout):
+            request.cancelled = True
+            raise PortBusy(f"{self.label} is busy")
+        if request.error is not None:
+            raise request.error
+        return request.lines
 
     @staticmethod
     def _read_lines(port) -> list[str]:
@@ -245,8 +336,8 @@ class CliPort(SerialPort):
 
     def device_info(self) -> dict:
         """One round trip for the header panel."""
-        header = self.submit("?\n")
         info = {"SN": "N/A", "Built": "N/A"}
+        header = self.submit("?\n")
         for line in header:
             key = line.partition(":")[0].strip()
             if key in info:
@@ -317,7 +408,7 @@ class CliPort(SerialPort):
         command = "sense 0\n" if area == "g" else f"sense {area} 0\n"
         self.submit(command)
 
-    def adjust_sense(self, area, value) -> None:
+    def adjust_sense(self, area: str, value: int) -> None:
         """Apply a relative sensitivity change; the whole sequence is atomic."""
         step = "+" if value > 0 else "-"
         with self.exclusive():
